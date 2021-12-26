@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+  <link rel="preload" href="/lib/font-awesome/webfonts/fa-brands-400.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+  <link rel="preload" href="/lib/font-awesome/webfonts/fa-regular-400.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+  <link rel="preload" href="/lib/font-awesome/webfonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+  <link rel="preload" href="/lib/JetBrainsMono/web/woff2/JetBrainsMono-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+  <script type="text/javascript" src="https://latest.cactus.chat/cactus.js"></script>
+  <link rel="stylesheet" href="https://latest.cactus.chat/style.css" type="text/css">
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title> Bare Minimum STM32 Toolchain Setup | mattnite blog</title>
+  <link rel = 'canonical' href = 'https://mattnite.github.io/posts/bare-minimum-stm32-toolchain-setup/'>
+  <meta name="description" content="hello this is still in construction">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="all,follow">
+  <meta name="googlebot" content="index,follow,snippet,archive">
+  <meta property="og:title" content="Bare Minimum STM32 Toolchain Setup" />
+<meta property="og:description" content="The first thing I’m going to cover here is setting up a bare minimum environment that cross-compiles for a microcontroller (MCU). You can probably do this for Windows, especially since I’ll be using cmake, but I’ll just be using Linux for the development environment. Most of this post is reiterating Michael Caisse’s talk at C&#43;&#43;Now 20181, and applying it to a NUCLEO-L073RZ development board by STMicro.
+I mostly picked this MCU because it’s made for low power applications which I want to play around with in the future, it’s got a built-in DAC (nice for signal processing), and the GPIO ports can be toggled faster per instruction than other architectures in the STM32 line." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://mattnite.github.io/posts/bare-minimum-stm32-toolchain-setup/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2019-05-24T21:16:51+00:00" />
+<meta property="article:modified_time" content="2019-05-24T21:16:51+00:00" />
+
+
+  <meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Bare Minimum STM32 Toolchain Setup"/>
+<meta name="twitter:description" content="The first thing I’m going to cover here is setting up a bare minimum environment that cross-compiles for a microcontroller (MCU). You can probably do this for Windows, especially since I’ll be using cmake, but I’ll just be using Linux for the development environment. Most of this post is reiterating Michael Caisse’s talk at C&#43;&#43;Now 20181, and applying it to a NUCLEO-L073RZ development board by STMicro.
+I mostly picked this MCU because it’s made for low power applications which I want to play around with in the future, it’s got a built-in DAC (nice for signal processing), and the GPIO ports can be toggled faster per instruction than other architectures in the STM32 line."/>
+
+  
+  
+    
+  
+  
+  <link rel="stylesheet" href="https://mattnite.github.io/css/styles.c05d68261bf086a9d7713c4f8a6215a3601608e267a816a7ee58f139b3d1aae51222aae2081c8e0c6bd35e1334773b7a16283022f31f92afd93bb37e5e822e66.css" integrity="sha512-wF1oJhvwhqnXcTxPimIVo2AWCOJnqBan7ljxObPRquUSIqriCByODGvTXhM0dzt6FigwIvMfkq/ZO7N&#43;XoIuZg=="> 
+
+  
+  
+  
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  
+
+  
+<link rel="icon" type="image/png" href="https://mattnite.github.io/images/favicon.ico" />
+
+  
+  
+  
+  
+  
+    
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-P60EHE6ELM"></script>
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'G-P60EHE6ELM', { 'anonymize_ip': false });
+}
+</script>
+
+  
+  
+</head>
+
+<body class="max-width mx-auto px3 ltr">
+  <div class="content index py4">
+
+  <div id="header-post">
+  <a id="menu-icon" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;" aria-label="Top of Page"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+         
+        <li><a href="/">Home</a></li>
+         
+        <li><a href="/posts">All posts</a></li>
+         
+        <li><a href="/tags">Tags</a></li>
+         
+        <li><a href="/about">About</a></li>
+        
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li>
+          <a class="icon" href="https://mattnite.github.io/posts/register-abstraction/" aria-label="Next">
+            <i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i>
+          </a>
+        </li>
+        
+        <li>
+          <a class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" aria-label="Top of Page">
+            <i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i>
+          </a>
+        </li>
+        <li>
+          <a class="icon" href="#" aria-label="Share">
+            <i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i>
+          </a>
+        </li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      
+      <ul>
+  
+  
+    
+  
+  
+  <li>
+    <a class="icon" href="http://www.facebook.com/sharer.php?u=https%3a%2f%2fmattnite.github.io%2fposts%2fbare-minimum-stm32-toolchain-setup%2f" aria-label="Facebook">
+      <i class="fab fa-facebook " aria-hidden="true"></i>
+    </a>
+  </li>
+  <li>
+    <a class="icon" href="https://twitter.com/share?url=https%3a%2f%2fmattnite.github.io%2fposts%2fbare-minimum-stm32-toolchain-setup%2f&text=Bare%20Minimum%20STM32%20Toolchain%20Setup" aria-label="Twitter">
+      <i class="fab fa-twitter " aria-hidden="true"></i>
+    </a>
+  </li>
+  <li>
+    <a class="icon" href="http://www.linkedin.com/shareArticle?url=https%3a%2f%2fmattnite.github.io%2fposts%2fbare-minimum-stm32-toolchain-setup%2f&title=Bare%20Minimum%20STM32%20Toolchain%20Setup" aria-label="Linkedin">
+      <i class="fab fa-linkedin " aria-hidden="true"></i>
+    </a>
+  </li>
+  <li>
+    <a class="icon" href="https://pinterest.com/pin/create/bookmarklet/?url=https%3a%2f%2fmattnite.github.io%2fposts%2fbare-minimum-stm32-toolchain-setup%2f&is_video=false&description=Bare%20Minimum%20STM32%20Toolchain%20Setup" aria-label="Pinterest">
+      <i class="fab fa-pinterest " aria-hidden="true"></i>
+    </a>
+  </li>
+  <li>
+    <a class="icon" href="mailto:?subject=Bare%20Minimum%20STM32%20Toolchain%20Setup&body=Check out this article: https%3a%2f%2fmattnite.github.io%2fposts%2fbare-minimum-stm32-toolchain-setup%2f" aria-label="Email">
+      <i class="fas fa-envelope " aria-hidden="true"></i>
+    </a>
+  </li>
+  <li>
+    <a class="icon" href="https://getpocket.com/save?url=https%3a%2f%2fmattnite.github.io%2fposts%2fbare-minimum-stm32-toolchain-setup%2f&title=Bare%20Minimum%20STM32%20Toolchain%20Setup" aria-label="Pocket">
+      <i class="fab fa-get-pocket " aria-hidden="true"></i>
+    </a>
+  </li>
+  <li>
+    <a class="icon" href="http://reddit.com/submit?url=https%3a%2f%2fmattnite.github.io%2fposts%2fbare-minimum-stm32-toolchain-setup%2f&title=Bare%20Minimum%20STM32%20Toolchain%20Setup" aria-label="reddit">
+      <i class="fab fa-reddit " aria-hidden="true"></i>
+    </a>
+  </li>
+  <li>
+    <a class="icon" href="http://www.tumblr.com/share/link?url=https%3a%2f%2fmattnite.github.io%2fposts%2fbare-minimum-stm32-toolchain-setup%2f&name=Bare%20Minimum%20STM32%20Toolchain%20Setup&description=The%20first%20thing%20I%e2%80%99m%20going%20to%20cover%20here%20is%20setting%20up%20a%20bare%20minimum%20environment%20that%20cross-compiles%20for%20a%20microcontroller%20%28MCU%29.%20You%20can%20probably%20do%20this%20for%20Windows%2c%20especially%20since%20I%e2%80%99ll%20be%20using%20cmake%2c%20but%20I%e2%80%99ll%20just%20be%20using%20Linux%20for%20the%20development%20environment.%20Most%20of%20this%20post%20is%20reiterating%20Michael%20Caisse%e2%80%99s%20talk%20at%20C%2b%2bNow%2020181%2c%20and%20applying%20it%20to%20a%20NUCLEO-L073RZ%20development%20board%20by%20STMicro.%0aI%20mostly%20picked%20this%20MCU%20because%20it%e2%80%99s%20made%20for%20low%20power%20applications%20which%20I%20want%20to%20play%20around%20with%20in%20the%20future%2c%20it%e2%80%99s%20got%20a%20built-in%20DAC%20%28nice%20for%20signal%20processing%29%2c%20and%20the%20GPIO%20ports%20can%20be%20toggled%20faster%20per%20instruction%20than%20other%20architectures%20in%20the%20STM32%20line." aria-label="Tumblr">
+      <i class="fab fa-tumblr " aria-hidden="true"></i>
+    </a>
+  </li>
+  <li>
+    <a class="icon" href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fmattnite.github.io%2fposts%2fbare-minimum-stm32-toolchain-setup%2f&t=Bare%20Minimum%20STM32%20Toolchain%20Setup" aria-label="Hacker News">
+      <i class="fab fa-hacker-news " aria-hidden="true"></i>
+    </a>
+  </li>
+</ul>
+
+    </div>
+    
+    <div id="toc">
+      <nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#vendor-tools">Vendor Tools</a></li>
+        <li><a href="#arm-gcc-toolchain">ARM GCC Toolchain</a></li>
+        <li><a href="#cmake-toolchain-file">CMake Toolchain File</a></li>
+        <li><a href="#stm32cubel0">STM32CubeL0</a></li>
+        <li><a href="#cmakeliststxt">CMakeLists.txt</a></li>
+        <li><a href="#flashing">Flashing</a></li>
+        <li><a href="#boot-mode">Boot Mode</a></li>
+        <li><a href="#results">Results</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+    
+  </span>
+</div>
+
+
+  <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+    <header>
+      <h1 class="posttitle" itemprop="name headline">
+        Bare Minimum STM32 Toolchain Setup
+      </h1>
+      <div class="meta">
+        
+        <div class="postdate">
+          
+          <time datetime="2019-05-24 21:16:51 &#43;0000 UTC" itemprop="datePublished">2019-05-24</time>
+          
+        </div>
+        
+        
+        
+        
+      </div>
+    </header>
+
+  
+    
+    <div class="content" itemprop="articleBody">
+      <p>The first thing I’m going to cover here is setting up a bare minimum environment that cross-compiles for a microcontroller (MCU). You can probably do this for Windows, especially since I’ll be using cmake, but I’ll just be using Linux for the development environment. Most of this post is reiterating Michael Caisse’s talk at C++Now 2018<sup id="fnref:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup>, and applying it to a NUCLEO-L073RZ development board by STMicro.</p>
+<p><img src="https://media.digikey.com/Photos/STMicro%20Photos/NUCLEO-L073RZ.jpg" alt="Look at this bucko right here"></p>
+<p>I mostly picked this MCU because it’s made for low power applications which I want to play around with in the future, it’s got a built-in DAC (nice for signal processing), and the GPIO ports can be toggled faster per instruction than other architectures in the STM32 line. It’s also not so big that it’s too complicated to remember all the peripherals, and it comes in SMD packages that are manageable to solder by hand.</p>
+<h3 id="vendor-tools">Vendor Tools</h3>
+<p>STMicro has their own set of tools that make configuration pretty easy called STM32CubeMX, it has a nice UI that lets you select your different clocks, set GPIO modes/alternative functions, and even add in different libraries like capacitive touch and freeRTOS. When you’ve put in what you want, it will generate all your C code and interfaces for your particular project.</p>
+<p>There’s also the question of an IDE. There are several options when working with STM32, the open source being called SW4STM32, others include something by IAR, and ARM keil.</p>
+<p>Now for my opinions, first: the whole point here is to understand the toolchain, build process, and our hardware, so I don’t care for having all of that work done for me. On top of that, it’s all in C so what’s even the point. What we can do here though is take the output of CubeMx and figure out what it’s actually doing under the hood – especially for the compiler options that we are going to see later. As for the IDE, I don’t actually like them, I’m happy enough using vim and the command line for development, but I like to structure projects so that everyone can use their preferred environment.</p>
+<h3 id="arm-gcc-toolchain">ARM GCC Toolchain</h3>
+<p>I do love that most MCUs have an ARM core these days since I can use one compiler for mostly everything, and customizing my development is easy. In the past I’ve had to use vendor compilers, and the problem there is that they might force you onto windows, use their IDE, and hide what’s going on under-the-hood, which isn’t a setup for easy performance optimization. The download page for the toolchain is <a href="https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads">here</a>. Pick whatever version you want, I just chose the latest since I’ll be working on C++17 and they’ve got all the features stable on GCC 8<sup id="fnref:2"><a href="#fn:2" class="footnote-ref" role="doc-noteref">2</a></sup>.</p>
+<p>For installing it on your system, you’ll notice that there are binaries for different OSs and an option to build it from source. I tried from source with no avail, and just copied the extracted folder to /usr/local while adding a new environment variable, ARM_GCC_BIN to point to the binary subdirectory. This variable becomes important to my cmake toolchain file as you’ll see later. I did it this way so that it would be easy to switch versions or so that it could easily be configured on someone else’s machine.</p>
+<h3 id="cmake-toolchain-file">CMake Toolchain File</h3>
+<p>Since we’re cross compiling we need to be fairly explicit to cmake as to what compiler we want to use, flags, and other configurations. The best way we can do this is to create a toolchain file which contains all the specifics, and then when running cmake just do the following:</p>
+<pre tabindex="0"><code>cmake -DCMAKE_TOOLCHAIN_FILE=../toolchain.cmake ..
+</code></pre><p>My project is fairly static at this point so I include it in the beginning of my CMakeLists.txt:</p>
+<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake"><span style="color:#24909d">cmake_minimum_required</span>(<span style="color:#ed9d13">VERSION</span> <span style="color:#ed9d13">3.0</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_TOOLCHAIN_FILE</span> <span style="color:#ed9d13">&#34;${CMAKE_CURRENT_SOURCE_DIR}/arm-gcc-toolchain.cmake&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span></code></pre></div><p>All the listings I show you today are going to be fragmented so that I cover the important parts, but you’ll be able to see the full files in my stm32 repo<sup id="fnref:3"><a href="#fn:3" class="footnote-ref" role="doc-noteref">3</a></sup>.  They may change slightly over time, so feel free to email me to ask questions down the line. That being said, it should be fairly clear what goes in what file. So the first thing in our toolchain file we need to do is specify our system and processor:</p>
+<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake"><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_SYSTEM_NAME</span> <span style="color:#ed9d13">Generic</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_SYSTEM_PROCESSOR</span> <span style="color:#ed9d13">arm</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span></code></pre></div><p>In our case here, arm is fairly straight forward, but Generic is used for our system name since we’re programming on bare metal, and so there is no OS. Next we set some variables and specify the compilers/binutils:</p>
+<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake"><span style="color:#24909d">set</span>(<span style="color:#ed9d13">TOOLCHAIN_PATH</span> $ENV{<span style="color:#40ffff">ARM_GCC_BIN</span>})<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CROSS_COMPILE</span> <span style="color:#ed9d13">arm-none-eabi-</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_C_COMPILER</span>    <span style="color:#ed9d13">&#34;${TOOLCHAIN_PATH}/${CROSS_COMPILE}gcc&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_CXX_COMPILER</span>  <span style="color:#ed9d13">&#34;${TOOLCHAIN_PATH}/${CROSS_COMPILE}g++&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_LINKER</span>        <span style="color:#ed9d13">&#34;${TOOLCHAIN_PATH}/${CROSS_COMPILE}ld&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_AR</span>            <span style="color:#ed9d13">&#34;${TOOLCHAIN_PATH}/${CROSS_COMPILE}ar&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span></code></pre></div><p>Now one thing cmake does when configuring all of this is validate the compiler by compiling some sort of trivial program. This gets hard to deal with because we need to screw with our cmake cache to get it to work, which I found to make linker configuration difficult in CMakeLists.txt. I know that this compiler is good to go, so I forced cmake to use it without complaint:</p>
+<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake"><span style="color:#999;font-style:italic"># force compiler
+</span><span style="color:#999;font-style:italic"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_C_COMPILER_WORKS</span> <span style="color:#ed9d13">TRUE</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_CXX_COMPILER_WORKS</span> <span style="color:#ed9d13">TRUE</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span></code></pre></div><p>This next listing sets the objcopy command so that we can add a step in our build to take the ouput ELF and create a raw binary file that we can flash our board with. We also tell cmake to compile everything statically since dynamic linking isn’t something we get to use on bare metal:</p>
+<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake"><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_OBJCOPY</span> <span style="color:#ed9d13">&#34;${TOOLCHAIN_PATH}/${CROSS_COMPILE}objcopy&#34;</span>
+	<span style="color:#ed9d13">CACHE</span> <span style="color:#ed9d13">FILEPATH</span> <span style="color:#ed9d13">&#34;The toolchain objcopy command&#34;</span> <span style="color:#ed9d13">FORCE</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_TRY_COMPILE_TARGET_TYPE</span> <span style="color:#ed9d13">STATIC_LIBRARY</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#999;font-style:italic"># Search for programs in the build host directories
+</span><span style="color:#999;font-style:italic"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_FIND_ROOT_PATH_MODE_PROGRAM</span> <span style="color:#ed9d13">NEVER</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#999;font-style:italic"># For libraries and headers in the target directories
+</span><span style="color:#999;font-style:italic"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_FIND_ROOT_PATH_MODE_LIBRARY</span> <span style="color:#ed9d13">ONLY</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_FIND_ROOT_PATH_MODE_INCLUDE</span> <span style="color:#ed9d13">ONLY</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_FIND_ROOT_PATH_MODE_PACKAGE</span> <span style="color:#ed9d13">ONLY</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span></code></pre></div><p>We are going to be setting compiler flags in CMakeLists.txt, but these ones have to do with low-level CPU settings, so they are going to do well here. To be specific we tell the compiler that we are targetting a Cortex-M0+ core, we don’t have a hardware FPU so any floating point operations will be done using software. Our CPU also uses the thumb instruction set which is 16-bit and good for compact code size, finally, the architecture is little endian so we tell the compiler that as well. At the end we store the flags in the cache so that they are used as default values in CMakeLists.txt.</p>
+<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake"><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_C_FLAGS</span> <span style="color:#ed9d13">&#34;${CMAKE_C_FLAGS} -mcpu=cortex-m0plus&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_C_FLAGS</span> <span style="color:#ed9d13">&#34;${CMAKE_C_FLAGS} -mfloat-abi=soft&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_C_FLAGS</span> <span style="color:#ed9d13">&#34;${CMAKE_C_FLAGS} -mthumb&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_C_FLAGS</span> <span style="color:#ed9d13">&#34;${CMAKE_C_FLAGS} -mlittle-endian&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_CXX_FLAGS</span> <span style="color:#ed9d13">&#34;${CMAKE_CXX_FLAGS} -mcpu=cortex-m0plus&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_CXX_FLAGS</span> <span style="color:#ed9d13">&#34;${CMAKE_CXX_FLAGS} -mfloat-abi=soft&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_CXX_FLAGS</span> <span style="color:#ed9d13">&#34;${CMAKE_CXX_FLAGS} -mthumb&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_CXX_FLAGS</span> <span style="color:#ed9d13">&#34;${CMAKE_CXX_FLAGS} -mlittle-endian&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#999;font-style:italic"># cache the flags for use
+</span><span style="color:#999;font-style:italic"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_C_FLAGS</span> <span style="color:#ed9d13">&#34;${CMAKE_C_FLAGS}&#34;</span> <span style="color:#ed9d13">CACHE</span> <span style="color:#ed9d13">STRING</span> <span style="color:#ed9d13">&#34;CFLAGS&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_C_FLAGS</span> <span style="color:#ed9d13">&#34;${CMAKE_CXX_FLAGS}&#34;</span> <span style="color:#ed9d13">CACHE</span> <span style="color:#ed9d13">STRING</span> <span style="color:#ed9d13">&#34;CXXFLAGS&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_ASM_FLAGS</span> <span style="color:#ed9d13">&#34;${CMAKE_ASM_FLAGS}&#34;</span> <span style="color:#ed9d13">CACHE</span> <span style="color:#ed9d13">STRING</span> <span style="color:#ed9d13">&#34;&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span></code></pre></div><h3 id="stm32cubel0">STM32CubeL0</h3>
+<p>The SDK for the L0 family is called STM32CubeL0. It contains a bunch of code we need like the linker script, startup code, examples, libraries, and defs for special-function-registers and the like. I COULD just put it somewhere on my machine and statically point the project to it, but I like making this project “just work” for other users so I have a script to fetch, extract, and cache the sdk (it only does this if it’s not found in the build directory). STMicro actually gets you to jump through some hoops to be able to download the SDK, so I’m actually hosting the zipped file on a private server (please don’t tell on me) for convenience. Later I’d like to look into using conan for package management and see if I can legally host all of STMicro’s SDKs and other libraries for my own use – a post for later.</p>
+<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#cd2828;font-weight:bold">#!/bin/bash
+</span><span style="color:#cd2828;font-weight:bold"></span>
+<span style="color:#40ffff">SOURCE_DIR</span>=<span style="color:#40ffff">$1</span>
+<span style="color:#40ffff">BUILD_DIR</span>=<span style="color:#40ffff">$2</span>
+<span style="color:#40ffff">FILE_NAME</span>=en.stm32cubel0.zip
+<span style="color:#40ffff">UNPACKED_NAME</span>=STM32Cube_FW_L0_V1.11.0
+<span style="color:#40ffff">URL</span>=http://some.url/<span style="color:#ed9d13">${</span><span style="color:#40ffff">FILE_NAME</span><span style="color:#ed9d13">}</span>
+<span style="color:#40ffff">STM32_CUBE</span>=stm32-cube
+
+<span style="color:#6ab825;font-weight:bold">if</span> [ ! -d <span style="color:#40ffff">$STM32_CUBE</span> ]; <span style="color:#6ab825;font-weight:bold">then</span>
+	<span style="color:#6ab825;font-weight:bold">if</span> [ ! -f <span style="color:#40ffff">$FILE_NAME</span> ]; <span style="color:#6ab825;font-weight:bold">then</span>
+		<span style="color:#24909d">echo</span> <span style="color:#ed9d13">&#34;-- Fetching STM32 CUBE L0&#34;</span>
+		wget --no-verbose <span style="color:#40ffff">$URL</span>
+	<span style="color:#6ab825;font-weight:bold">fi</span>
+
+	<span style="color:#24909d">echo</span> <span style="color:#ed9d13">&#34;-- Extracting STM32 CUBE L0&#34;</span>
+	unzip -q <span style="color:#40ffff">$FILE_NAME</span>
+	mv <span style="color:#40ffff">$UNPACKED_NAME</span> <span style="color:#40ffff">$STM32_CUBE</span>
+<span style="color:#6ab825;font-weight:bold">fi</span>
+</code></pre></div><h3 id="cmakeliststxt">CMakeLists.txt</h3>
+<p>This process is relatively simple (that’s why we’ve been working so hard), and I’m going to skim over some of the specifics like the linker script and startup code because they should really get a post of their own. To summarize though:</p>
+<ul>
+<li>set our toolchain file as expected</li>
+<li>call the SKD fetching script</li>
+<li>set our linker script</li>
+<li>set some compiler flags</li>
+<li>include files from SDK that needed to be included (so that it would compile)</li>
+<li>add our ELF executable</li>
+<li>designate that after the ELF is made, make a raw binary file.</li>
+</ul>
+<p>Now to talk about some of the important compiler flags:</p>
+<ul>
+<li>-g: include debugging symbols</li>
+<li>-nostartfiles: dont use standard system startup files (since we&rsquo;re running on bare metal here</li>
+<li>-Os: optimizes code for size (REALLY IMPORTANT, I&rsquo;ll do a post on compiler optimization later)</li>
+<li>-flto: is for link-time-optimization</li>
+<li>-DSTM32L073xx: adds a define (used in SDK code)</li>
+<li>-MMD, -MP: were in the CubeMx Makefiles, I have no idea what they do at this point</li>
+</ul>
+<p>Not included, but will be later on is -fno-rtti, and -fno-exceptions. They are important because RTTI (Run Time Type Information), and exceptions are generally frowned upon for embedded systems due to bloating of the code size. I haven’t included them yet however, because I want to measure what that bloat actually is – I don’t care too much for RTTI, it’s exceptions that I’m curious about.</p>
+<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake"><span style="color:#24909d">cmake_minimum_required</span>(<span style="color:#ed9d13">VERSION</span> <span style="color:#ed9d13">3.0</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_TOOLCHAIN_FILE</span> <span style="color:#ed9d13">&#34;${CMAKE_CURRENT_SOURCE_DIR}/arm-gcc-toolchain.cmake&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">project</span>(<span style="color:#ed9d13">stm32</span> <span style="color:#ed9d13">LANGUAGES</span> <span style="color:#ed9d13">C</span> <span style="color:#ed9d13">CXX</span> <span style="color:#ed9d13">ASM</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">execute_process</span>(
+	<span style="color:#ed9d13">COMMAND</span> <span style="color:#ed9d13">&#34;${CMAKE_CURRENT_SOURCE_DIR}/fetch_dependencies.sh&#34;</span>
+	${<span style="color:#40ffff">CMAKE_CURRENT_SOURCE_DIR</span>}
+	<span style="color:#ed9d13">WORKING_DIRECTORY</span> ${<span style="color:#40ffff">CMAKE_CURRENT_BINARY_DIR</span>}
+)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">STM32_CUBE</span> <span style="color:#ed9d13">&#34;${CMAKE_CURRENT_BINARY_DIR}/stm32-cube&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">file</span>(<span style="color:#ed9d13">GLOB</span> <span style="color:#ed9d13">SOURCES</span> <span style="color:#ed9d13">&#34;${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">LINKER_SCRIPT</span>
+	<span style="color:#ed9d13">&#34;${STM32_CUBE}/Projects/NUCLEO-L073RZ/Templates/SW4STM32/STM32L073RZ_NUCLEO/STM32L073RZTx_FLASH.ld&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">WARNING_FLAGS</span> <span style="color:#ed9d13">&#34;${WARNING_FLAGS} -Wall&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">SHARED_FLAGS</span> <span style="color:#ed9d13">&#34;${SHARED_FLAGS} -g -Os -flto -nostartfiles -DSTM32L073xx&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">SHARED_FLAGS</span> <span style="color:#ed9d13">&#34;${SHARED_FLAGS} -MMD -MP&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_CXX_FLAGS</span> <span style="color:#ed9d13">&#34;${CMAKE_CXX_FLAGS} ${SHARED_FLAGS} ${WARNING_FLAGS}&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_CXX_FLAGS</span> <span style="color:#ed9d13">&#34;${CMAKE_CXX_FLAGS} -std=c++17&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_C_FLAGS</span> <span style="color:#ed9d13">&#34;${CMAKE_C_FLAGS} ${SHARED_FLAGS} ${WARNING_FLAGS}&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">set</span>(<span style="color:#ed9d13">CMAKE_EXE_LINKER_FLAGS</span>
+	<span style="color:#ed9d13">&#34;${CMAKE_EXE_LINKER_FLAGS} -flto -T ${LINKER_SCRIPT}&#34;</span>)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">include_directories</span>(
+	<span style="color:#ed9d13">&#34;${STM32_CUBE}/Drivers/CMSIS/Device/ST/STM32L0xx/Include&#34;</span>
+	<span style="color:#ed9d13">&#34;${STM32_CUBE}/Drivers/CMSIS/Include&#34;</span>
+	<span style="color:#ed9d13">&#34;${CMAKE_CURRENT_SOURCE_DIR}/include&#34;</span>
+)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">add_executable</span>(<span style="color:#ed9d13">stm32</span>
+	<span style="color:#ed9d13">&#34;${STM32_CUBE}/Drivers/CMSIS/Device/ST/STM32L0xx/Source/Templates/gcc/startup_stm32l073xx.s&#34;</span>
+	${<span style="color:#40ffff">SOURCES</span>}
+)<span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2">
+</span><span style="color:#a61717;background-color:#e3d2d2"></span><span style="color:#24909d">add_custom_command</span>(
+	<span style="color:#ed9d13">TARGET</span> <span style="color:#ed9d13">stm32</span> <span style="color:#ed9d13">POST_BUILD</span>
+	<span style="color:#ed9d13">COMMAND</span> ${<span style="color:#40ffff">CMAKE_OBJCOPY</span>} <span style="color:#ed9d13">stm32</span> <span style="color:#ed9d13">-O</span> <span style="color:#ed9d13">binary</span> <span style="color:#ed9d13">stm32.bin</span>
+	<span style="color:#ed9d13">WORKING_DIRECTORY</span> ${<span style="color:#40ffff">CMAKE_CURRENT_BINARY_DIR</span>}
+	<span style="color:#ed9d13">COMMENT</span> <span style="color:#ed9d13">&#34;Convert ELF to binary&#34;</span>
+)<span style="color:#a61717;background-color:#e3d2d2">
+</span></code></pre></div><p>One hacky thing that I had to do by not using the startfiles is that I needed to resolve the ‘_init’ symbol, so I defined an empty function in one of the files. I really don’t like doing weird archaic stuff like this and I’m not sure if there are any consequences so I want to find a proper solution in the future, but for lighting up an LED, it will do.</p>
+<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#6ab825;font-weight:bold">extern</span> <span style="color:#ed9d13">&#34;C&#34;</span> {
+<span style="color:#6ab825;font-weight:bold">void</span> <span style="color:#447fcf">_init</span>(<span style="color:#6ab825;font-weight:bold">void</span>) {}
+}
+</code></pre></div><p>For main, all we’re going to do is turn on LD2. The code does look a little different from what you’re used to in embedded programming for flipping bits, but it’s a register abstraction method that I’ve been playing with and I plan on writing another post on it in the future. Hopefully it’s as readable as I think it is and the bits I’m flipping to get LD2 to light are apparent.</p>
+<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#6ab825;font-weight:bold">int</span> <span style="color:#447fcf">main</span>() {
+    Rcc::GpioClkEn::set&lt;<span style="color:#3677a9">0</span>&gt;();
+
+    GpioA::Mode::set&lt;<span style="color:#3677a9">11</span>&gt;();
+    GpioA::Bsrr::set&lt;<span style="color:#3677a9">5</span>&gt;();
+
+    <span style="color:#6ab825;font-weight:bold">while</span> (<span style="color:#24909d">true</span>) {}
+}
+</code></pre></div><h3 id="flashing">Flashing</h3>
+<p>The Nucleo board I’m using has STLinkV2 on it, so all I need to do is use stlink utilities that are freely and easily available to use. I’m just going to give you this link <a href="https://github.com/texane/stlink/blob/master/doc/tutorial.md">here</a>, the title says it’s for discovery boards, but it works for the Nucleo board no problem.</p>
+<h3 id="boot-mode">Boot Mode</h3>
+<p>One last detail which is super important for your newly flashed code to work properly, and that is what address the MCU is going to load at boot time. Our little guy can select either flash, system memory, or sram as the boot area and we want flash, and according to the STM32L0 reference manual, that just means grounding the BOOT0 pin.</p>
+<h3 id="results">Results</h3>
+<p>After that, you should see your green LD2 light up! It’s a lot of work to just get a damn LED to turn on, but it’s totally worth it. As I’ve mentioned earlier, there are a number of points that I skimmed, all deserving a quick post of their own, and there is so much to look forward to.</p>
+<p>Cheers,
+Matt</p>
+<section class="footnotes" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn:1" role="doc-endnote">
+<p>C++Now 2018: Michael Caisse “Modern C++ in Embedded Systems”, <a href="https://www.youtube.com/watch?v=c9Xt6Me3mJ4">https://www.youtube.com/watch?v=c9Xt6Me3mJ4</a>&#160;<a href="#fnref:1" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:2" role="doc-endnote">
+<p>GNU C++ Standard Support, <a href="https://www.gnu.org/software/gcc/projects/cxx-status.html">https://www.gnu.org/software/gcc/projects/cxx-status.html</a>&#160;<a href="#fnref:2" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:3" role="doc-endnote">
+<p>Matt’s stm32 repo, <a href="https://github.com/matt1795/stm32">https://github.com/matt1795/stm32</a>&#160;<a href="#fnref:3" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+</ol>
+</section>
+
+    </div>
+  </article>
+
+  
+  
+
+
+
+
+
+
+  <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/posts">All posts</a></li>
+         
+          <li><a href="/tags">Tags</a></li>
+         
+          <li><a href="/about">About</a></li>
+        
+      </ul>
+    </div>
+
+    
+    <div id="toc-footer" style="display: none">
+      <nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#vendor-tools">Vendor Tools</a></li>
+        <li><a href="#arm-gcc-toolchain">ARM GCC Toolchain</a></li>
+        <li><a href="#cmake-toolchain-file">CMake Toolchain File</a></li>
+        <li><a href="#stm32cubel0">STM32CubeL0</a></li>
+        <li><a href="#cmakeliststxt">CMakeLists.txt</a></li>
+        <li><a href="#flashing">Flashing</a></li>
+        <li><a href="#boot-mode">Boot Mode</a></li>
+        <li><a href="#results">Results</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+    
+
+    <div id="share-footer" style="display: none">
+      
+      <ul>
+  
+  
+    
+  
+  
+  <li>
+    <a class="icon" href="http://www.facebook.com/sharer.php?u=https%3a%2f%2fmattnite.github.io%2fposts%2fbare-minimum-stm32-toolchain-setup%2f" aria-label="Facebook">
+      <i class="fab fa-facebook fa-lg" aria-hidden="true"></i>
+    </a>
+  </li>
+  <li>
+    <a class="icon" href="https://twitter.com/share?url=https%3a%2f%2fmattnite.github.io%2fposts%2fbare-minimum-stm32-toolchain-setup%2f&text=Bare%20Minimum%20STM32%20Toolchain%20Setup" aria-label="Twitter">
+      <i class="fab fa-twitter fa-lg" aria-hidden="true"></i>
+    </a>
+  </li>
+  <li>
+    <a class="icon" href="http://www.linkedin.com/shareArticle?url=https%3a%2f%2fmattnite.github.io%2fposts%2fbare-minimum-stm32-toolchain-setup%2f&title=Bare%20Minimum%20STM32%20Toolchain%20Setup" aria-label="Linkedin">
+      <i class="fab fa-linkedin fa-lg" aria-hidden="true"></i>
+    </a>
+  </li>
+  <li>
+    <a class="icon" href="https://pinterest.com/pin/create/bookmarklet/?url=https%3a%2f%2fmattnite.github.io%2fposts%2fbare-minimum-stm32-toolchain-setup%2f&is_video=false&description=Bare%20Minimum%20STM32%20Toolchain%20Setup" aria-label="Pinterest">
+      <i class="fab fa-pinterest fa-lg" aria-hidden="true"></i>
+    </a>
+  </li>
+  <li>
+    <a class="icon" href="mailto:?subject=Bare%20Minimum%20STM32%20Toolchain%20Setup&body=Check out this article: https%3a%2f%2fmattnite.github.io%2fposts%2fbare-minimum-stm32-toolchain-setup%2f" aria-label="Email">
+      <i class="fas fa-envelope fa-lg" aria-hidden="true"></i>
+    </a>
+  </li>
+  <li>
+    <a class="icon" href="https://getpocket.com/save?url=https%3a%2f%2fmattnite.github.io%2fposts%2fbare-minimum-stm32-toolchain-setup%2f&title=Bare%20Minimum%20STM32%20Toolchain%20Setup" aria-label="Pocket">
+      <i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i>
+    </a>
+  </li>
+  <li>
+    <a class="icon" href="http://reddit.com/submit?url=https%3a%2f%2fmattnite.github.io%2fposts%2fbare-minimum-stm32-toolchain-setup%2f&title=Bare%20Minimum%20STM32%20Toolchain%20Setup" aria-label="reddit">
+      <i class="fab fa-reddit fa-lg" aria-hidden="true"></i>
+    </a>
+  </li>
+  <li>
+    <a class="icon" href="http://www.tumblr.com/share/link?url=https%3a%2f%2fmattnite.github.io%2fposts%2fbare-minimum-stm32-toolchain-setup%2f&name=Bare%20Minimum%20STM32%20Toolchain%20Setup&description=The%20first%20thing%20I%e2%80%99m%20going%20to%20cover%20here%20is%20setting%20up%20a%20bare%20minimum%20environment%20that%20cross-compiles%20for%20a%20microcontroller%20%28MCU%29.%20You%20can%20probably%20do%20this%20for%20Windows%2c%20especially%20since%20I%e2%80%99ll%20be%20using%20cmake%2c%20but%20I%e2%80%99ll%20just%20be%20using%20Linux%20for%20the%20development%20environment.%20Most%20of%20this%20post%20is%20reiterating%20Michael%20Caisse%e2%80%99s%20talk%20at%20C%2b%2bNow%2020181%2c%20and%20applying%20it%20to%20a%20NUCLEO-L073RZ%20development%20board%20by%20STMicro.%0aI%20mostly%20picked%20this%20MCU%20because%20it%e2%80%99s%20made%20for%20low%20power%20applications%20which%20I%20want%20to%20play%20around%20with%20in%20the%20future%2c%20it%e2%80%99s%20got%20a%20built-in%20DAC%20%28nice%20for%20signal%20processing%29%2c%20and%20the%20GPIO%20ports%20can%20be%20toggled%20faster%20per%20instruction%20than%20other%20architectures%20in%20the%20STM32%20line." aria-label="Tumblr">
+      <i class="fab fa-tumblr fa-lg" aria-hidden="true"></i>
+    </a>
+  </li>
+  <li>
+    <a class="icon" href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fmattnite.github.io%2fposts%2fbare-minimum-stm32-toolchain-setup%2f&t=Bare%20Minimum%20STM32%20Toolchain%20Setup" aria-label="Hacker News">
+      <i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i>
+    </a>
+  </li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+      
+        <a id="menu-toggle" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;" aria-label="Menu">
+          <i class="fas fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        
+        <a id="toc-toggle" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;" aria-label="TOC">
+          <i class="fas fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        
+        <a id="share-toggle" class="icon" href="#" onclick="$('#share-footer').toggle();return false;" aria-label="Share">
+          <i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" aria-label="Top of Page">
+          <i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+
+  <footer id="footer">
+  <div class="footer-left">
+    Copyright  &copy; 2021  Matthew Knight 
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+         
+        <li><a href="/">Home</a></li>
+         
+        <li><a href="/posts">All posts</a></li>
+         
+        <li><a href="/tags">Tags</a></li>
+         
+        <li><a href="/about">About</a></li>
+        
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+
+  </div>
+</body>
+
+<link rel="stylesheet" href=/lib/font-awesome/css/all.min.css>
+<script src=/lib/jquery/jquery.min.js></script>
+<script src=/js/main.js></script>
+
+<script src=/js/code-copy.js></script>
+
+
+
+  
+
+
+<script>
+  MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+    },
+    svg: {
+      fontCache: 'global'
+    }
+  };
+</script>
+<script type="text/javascript" id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
+
+</html>
