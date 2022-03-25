@@ -9,9 +9,9 @@
   <link rel="stylesheet" href="https://latest.cactus.chat/style.css" type="text/css">
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title> Template Metaprogramming For Register Abstraction | mattnite blog</title>
+  <title> Template Metaprogramming For Register Abstraction | mattnite&#39;s blog</title>
   <link rel = 'canonical' href = 'https://mattnite.github.io/posts/register-abstraction/'>
-  <meta name="description" content="hello this is still in construction">
+  
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="all,follow">
   <meta name="googlebot" content="index,follow,snippet,archive">
@@ -223,34 +223,34 @@ if (!doNotTrack) {
     <div class="content" itemprop="articleBody">
       <p>It&rsquo;s been a while since my last post and I&rsquo;ve got a lot of cool bare metal stuff to show you guys. This one is going to go over different methods of manipulating Special Function Registers (SFRs), and to end it I&rsquo;ll be covering a method that encodes all the SFRs of a microcontroller into a C++ type which will allow us to use template metaprogramming!. Let&rsquo;s get this damn thing on the road:</p>
 <p>When we first learn how to program MCUs in school, we&rsquo;re told how to set, clear, and toggle bits using logical operators:</p>
-<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#999;font-style:italic">// setting bit 3
-</span><span style="color:#999;font-style:italic"></span>SOME_REGISTER |= (<span style="color:#3677a9">1</span> &lt;&lt; <span style="color:#3677a9">3</span>);
-
-<span style="color:#999;font-style:italic">// clearing bit 5 and 24
-</span><span style="color:#999;font-style:italic"></span>SOME_REGISTER &amp;= ~((<span style="color:#3677a9">1</span> &lt;&lt; <span style="color:#3677a9">5</span>) | (<span style="color:#3677a9">1</span> &lt;&lt; <span style="color:#3677a9">24</span>));
-
-<span style="color:#999;font-style:italic">// read and write value to a field
-</span><span style="color:#999;font-style:italic"></span>some_variable = (<span style="color:#3677a9">0xe00</span> &amp; SOME_REGISTER) &gt;&gt; <span style="color:#3677a9">9</span>;
-SOME_REGISTER &amp;= ~<span style="color:#3677a9">0xe00</span> &amp; (<span style="color:#3677a9">2</span> &lt;&lt; <span style="color:#3677a9">9</span>);
-</code></pre></div><p>Then in different vendor SDKs and CMSIS there is the use of macros to make these a bit more readable.</p>
-<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c">SET_BITS(SOME_REGISTER, BIT3);
-CLEAR_BITS(SOME_REGISTER, BIT5 | BIT24);
-
-<span style="color:#999;font-style:italic">// CMSIS Field Reading and writing
-</span><span style="color:#999;font-style:italic"></span>id = _FLD2VAL(SCB_CPUID_REVISION, SCB-&gt;CPUID);
-SCB-&gt;CPUID = _VAL2FLD(SCB_CPUID_REVISION, <span style="color:#3677a9">0x3</span>) | _VAL2FLD(SCB_CPUID_VARIANT, <span style="color:#3677a9">0x3</span>);
-</code></pre></div><p>The CMSIS macro _VAL2FLD is defined as the following:</p>
-<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#cd2828;font-weight:bold">#define _VAL2FLD(field, value)    ((value &lt;&lt; field ## _Pos) &amp; field ## _Msk)
-</span></code></pre></div><p>It shifts the value by the bit offset, and masks it so that it doesn&rsquo;t potentially overflow into any other fields. This is nice, but all that is required is for there to be a FIELD_Pos and FIELD_Msk defined, so one could incorrectly use field defines for a different register with absolutely zero compiler errors or even warnings.</p>
+<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#999;font-style:italic">// setting bit 3
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span>SOME_REGISTER |= (<span style="color:#3677a9">1</span> &lt;&lt; <span style="color:#3677a9">3</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic">// clearing bit 5 and 24
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span>SOME_REGISTER &amp;= ~((<span style="color:#3677a9">1</span> &lt;&lt; <span style="color:#3677a9">5</span>) | (<span style="color:#3677a9">1</span> &lt;&lt; <span style="color:#3677a9">24</span>));
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic">// read and write value to a field
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span>some_variable = (<span style="color:#3677a9">0xe00</span> &amp; SOME_REGISTER) &gt;&gt; <span style="color:#3677a9">9</span>;
+</span></span><span style="display:flex;"><span>SOME_REGISTER &amp;= ~<span style="color:#3677a9">0xe00</span> &amp; (<span style="color:#3677a9">2</span> &lt;&lt; <span style="color:#3677a9">9</span>);
+</span></span></code></pre></div><p>Then in different vendor SDKs and CMSIS there is the use of macros to make these a bit more readable.</p>
+<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span>SET_BITS(SOME_REGISTER, BIT3);
+</span></span><span style="display:flex;"><span>CLEAR_BITS(SOME_REGISTER, BIT5 | BIT24);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic">// CMSIS Field Reading and writing
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span>id = _FLD2VAL(SCB_CPUID_REVISION, SCB-&gt;CPUID);
+</span></span><span style="display:flex;"><span>SCB-&gt;CPUID = _VAL2FLD(SCB_CPUID_REVISION, <span style="color:#3677a9">0x3</span>) | _VAL2FLD(SCB_CPUID_VARIANT, <span style="color:#3677a9">0x3</span>);
+</span></span></code></pre></div><p>The CMSIS macro _VAL2FLD is defined as the following:</p>
+<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#cd2828;font-weight:bold">#define _VAL2FLD(field, value)    ((value &lt;&lt; field ## _Pos) &amp; field ## _Msk)
+</span></span></span></code></pre></div><p>It shifts the value by the bit offset, and masks it so that it doesn&rsquo;t potentially overflow into any other fields. This is nice, but all that is required is for there to be a FIELD_Pos and FIELD_Msk defined, so one could incorrectly use field defines for a different register with absolutely zero compiler errors or even warnings.</p>
 <p>And this is the issue I have with macros, it&rsquo;s just blind text generation and there&rsquo;s too much room for abuse without any sort of error checking. That&rsquo;s why I prefer leveraging the compiler or language features instead. I&rsquo;m not 100% opposed though, for example, googletest does a great job at using macros as an interface for the test framework.</p>
 <h2 id="bitfields">bitfields</h2>
 <p>Continuing on, the next logical step is to use using bitfields:</p>
-<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#6ab825;font-weight:bold">struct</span> <span style="color:#447fcf;text-decoration:underline">SomeRegister</span> {
-     <span style="color:#6ab825;font-weight:bold">unsigned</span> <span style="color:#6ab825;font-weight:bold">int</span> foo : <span style="color:#3677a9">1</span>;
-     <span style="color:#6ab825;font-weight:bold">unsigned</span> <span style="color:#6ab825;font-weight:bold">int</span> bar : <span style="color:#3677a9">3</span>;
-}
-</code></pre></div><p>See that looks good, you even get to have a named, guarded range of bits that won&rsquo;t spill into any others! oh wait but let&rsquo;s just read this from the standard:</p>
-<p><strong>C11 §6.7.2.1:</strong> <em>&ldquo;The order of allocation of bit-fields within a unit (high-order to low-order or low-order to high-order) is implementation-defined.&quot;</em></p>
+<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#6ab825;font-weight:bold">struct</span> <span style="color:#447fcf;text-decoration:underline">SomeRegister</span> {
+</span></span><span style="display:flex;"><span>     <span style="color:#6ab825;font-weight:bold">unsigned</span> <span style="color:#6ab825;font-weight:bold">int</span> foo : <span style="color:#3677a9">1</span>;
+</span></span><span style="display:flex;"><span>     <span style="color:#6ab825;font-weight:bold">unsigned</span> <span style="color:#6ab825;font-weight:bold">int</span> bar : <span style="color:#3677a9">3</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>See that looks good, you even get to have a named, guarded range of bits that won&rsquo;t spill into any others! oh wait but let&rsquo;s just read this from the standard:</p>
+<p><strong>C11 §6.7.2.1:</strong> <em>&ldquo;The order of allocation of bit-fields within a unit (high-order to low-order or low-order to high-order) is implementation-defined.&rdquo;</em></p>
 <p>So, if we define an SFR with certain bit fields the compiler is able to order them however it likes which is a huge problem. Even if the compiler we&rsquo;re using ordered them as the user defined, continuing with this option means basing a project on undefined behaviour that might change between compilers or different versions of the same compiler. We&rsquo;re done here.</p>
 <h2 id="kvasir">kvasir</h2>
 <p>Next up we have <a href="https://github.com/kvasir-io/kvasir">kvasir</a> which is a modern C++ library that has a number of functionalities (&ldquo;boost but for a different domain&rdquo;), but I&rsquo;m going to focus on their register abstraction since that&rsquo;s what we&rsquo;re here for today. They claim that &ldquo;Despite the fact that we use modern C++ tools under the hood the public interface is quite &lsquo;C like&rsquo;&rdquo;. A good approach since most embedded development is still done in C.</p>
@@ -263,80 +263,78 @@ if(apply(read(Config::stopLength)) == Config::StopBits::one) {/*...*/}
 </code></pre><p>I really like the code generation from SVD files to account for different SFR memory locations accross different MCUs, but I&rsquo;d like a more C++ like interface that treats the registers and bit fields as objects or types &ndash; and this brings us to our final register abstraction method:</p>
 <h2 id="bitfield-class-template">BitField Class Template</h2>
 <p>Ok so this one here is my favourite, it is inspired by <a href="https://preshing.com/20150324/safe-bitfields-in-cpp/">this</a> and <a href="https://blog.codef00.com/2014/12/06/portable-bitfields-using-c11">this</a> blog posts, and it&rsquo;s pretty simple and straight forward. You have a BitField class template that takes template parameters for the address, offset, and static methods for accessing the field. As well as an underlying integral type for defining the size of the memory location so that we can handle other architectures besides 32-bit.</p>
-<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#6ab825;font-weight:bold">template</span> &lt;<span style="color:#6ab825;font-weight:bold">auto</span> address, <span style="color:#6ab825;font-weight:bold">auto</span> offset, <span style="color:#6ab825;font-weight:bold">auto</span> width, <span style="color:#6ab825;font-weight:bold">typename</span> T = std::<span style="color:#6ab825;font-weight:bold">uint32_t</span>&gt;
-<span style="color:#6ab825;font-weight:bold">class</span> <span style="color:#447fcf;text-decoration:underline">BitField</span> {
-    <span style="color:#6ab825;font-weight:bold">static</span> T <span style="color:#6ab825;font-weight:bold">const</span> max = (<span style="color:#3677a9">1</span> &lt;&lt; width) - <span style="color:#3677a9">1</span>;
-    <span style="color:#6ab825;font-weight:bold">static</span> T <span style="color:#6ab825;font-weight:bold">const</span> mask = max &lt;&lt; offset;
-
-    <span style="color:#6ab825;font-weight:bold">static</span> T <span style="color:#447fcf">read</span>() {
-        <span style="color:#6ab825;font-weight:bold">return</span> (*<span style="color:#6ab825;font-weight:bold">reinterpret_cast</span>&lt;<span style="color:#6ab825;font-weight:bold">volatile</span> T*&gt;(address) &amp; mask) &gt;&gt; offset;
-    }
-
-    <span style="color:#6ab825;font-weight:bold">static</span> <span style="color:#6ab825;font-weight:bold">void</span> <span style="color:#447fcf">write</span>(T val) {
-        <span style="color:#6ab825;font-weight:bold">auto</span> ptr = <span style="color:#6ab825;font-weight:bold">reinterpret_cast</span>&lt;<span style="color:#6ab825;font-weight:bold">volatile</span> T*&gt;(address);
-        *ptr = (*ptr &amp; ~mask) | (mask &amp; (val &lt;&lt; offset));
-    }
-};
-
-</code></pre></div><p>Let&rsquo;s say we have a clock enable for a gpio port, the register it&rsquo;s located is at 0x5000, and it&rsquo;s a single bit located at bit 7. We&rsquo;d define and use it as the following:</p>
+<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#6ab825;font-weight:bold">template</span> &lt;<span style="color:#6ab825;font-weight:bold">auto</span> address, <span style="color:#6ab825;font-weight:bold">auto</span> offset, <span style="color:#6ab825;font-weight:bold">auto</span> width, <span style="color:#6ab825;font-weight:bold">typename</span> T = std::<span style="color:#6ab825;font-weight:bold">uint32_t</span>&gt;
+</span></span><span style="display:flex;"><span><span style="color:#6ab825;font-weight:bold">class</span> <span style="color:#447fcf;text-decoration:underline">BitField</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#6ab825;font-weight:bold">static</span> T <span style="color:#6ab825;font-weight:bold">const</span> max = (<span style="color:#3677a9">1</span> &lt;&lt; width) - <span style="color:#3677a9">1</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#6ab825;font-weight:bold">static</span> T <span style="color:#6ab825;font-weight:bold">const</span> mask = max &lt;&lt; offset;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#6ab825;font-weight:bold">static</span> T <span style="color:#447fcf">read</span>() {
+</span></span><span style="display:flex;"><span>        <span style="color:#6ab825;font-weight:bold">return</span> (*<span style="color:#6ab825;font-weight:bold">reinterpret_cast</span>&lt;<span style="color:#6ab825;font-weight:bold">volatile</span> T*&gt;(address) &amp; mask) &gt;&gt; offset;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#6ab825;font-weight:bold">static</span> <span style="color:#6ab825;font-weight:bold">void</span> <span style="color:#447fcf">write</span>(T val) {
+</span></span><span style="display:flex;"><span>        <span style="color:#6ab825;font-weight:bold">auto</span> ptr = <span style="color:#6ab825;font-weight:bold">reinterpret_cast</span>&lt;<span style="color:#6ab825;font-weight:bold">volatile</span> T*&gt;(address);
+</span></span><span style="display:flex;"><span>        *ptr = (*ptr &amp; ~mask) | (mask &amp; (val &lt;&lt; offset));
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>};
+</span></span></code></pre></div><p>Let&rsquo;s say we have a clock enable for a gpio port, the register it&rsquo;s located is at 0x5000, and it&rsquo;s a single bit located at bit 7. We&rsquo;d define and use it as the following:</p>
 <p>NOTE: this is an oversimplified example to build on for what&rsquo;s coming next, so don&rsquo;t judge :P.</p>
-<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#6ab825;font-weight:bold">using</span> ClockFlag = BitField&lt;<span style="color:#3677a9">0x5000</span>, <span style="color:#3677a9">7</span>, <span style="color:#3677a9">1</span>&gt;;
-
-<span style="color:#6ab825;font-weight:bold">auto</span> enabled = ClockFlag::read();
-<span style="color:#6ab825;font-weight:bold">if</span> (!enabled)
-    ClockFlag::write(<span style="color:#3677a9">1</span>);
-
-</code></pre></div><p>Once we alias the type of the bitfield flag, the operations for reading and writing are clean and readable with those static methods. If we were to write two to the flag, it would be masked off, and we would effectively be writing zero. The interface for the class template could be expanded to include SFINAEd methods for setting and clearing field values if the width is one, or access to some of the intermediate values so that the user can determine the max value of the field.</p>
+<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#6ab825;font-weight:bold">using</span> ClockFlag = BitField&lt;<span style="color:#3677a9">0x5000</span>, <span style="color:#3677a9">7</span>, <span style="color:#3677a9">1</span>&gt;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#6ab825;font-weight:bold">auto</span> enabled = ClockFlag::read();
+</span></span><span style="display:flex;"><span><span style="color:#6ab825;font-weight:bold">if</span> (!enabled)
+</span></span><span style="display:flex;"><span>    ClockFlag::write(<span style="color:#3677a9">1</span>);
+</span></span></code></pre></div><p>Once we alias the type of the bitfield flag, the operations for reading and writing are clean and readable with those static methods. If we were to write two to the flag, it would be masked off, and we would effectively be writing zero. The interface for the class template could be expanded to include SFINAEd methods for setting and clearing field values if the width is one, or access to some of the intermediate values so that the user can determine the max value of the field.</p>
 <p>Now we have a building block to create a type for a specific MCU.</p>
 <h3 id="svd-alias">svd-alias</h3>
 <p>Since we are using type aliases to &ldquo;define&rdquo; different bit fields, and we&rsquo;ll follow in kvasir&rsquo;s steps in using SVD files to generate code, I&rsquo;ve named this project svd-alias &ndash; I know, pretty boring. In the SVD schema, there is the possibility to define read/write access to a register, so we&rsquo;ll be creating base classes to contain read and write methods, and inheriting from them to enable certain types of access. If you try writing to a read-only register, or one of its bit fields, you get a compiler error. This has already come in handy for me because I made an incorrect assumption on the operation of a peripheral while developing a driver and the compiler error got me on the right track.</p>
 <p>The class template for a read only register will look like the following:</p>
-<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#6ab825;font-weight:bold">template</span> &lt;<span style="color:#6ab825;font-weight:bold">auto</span> address, <span style="color:#6ab825;font-weight:bold">typename</span> T = std::<span style="color:#6ab825;font-weight:bold">uint32_t</span>&gt;
-<span style="color:#6ab825;font-weight:bold">struct</span> <span style="color:#447fcf;text-decoration:underline">RegisterReadOnly</span> {
-    <span style="color:#6ab825;font-weight:bold">template</span> &lt;<span style="color:#6ab825;font-weight:bold">auto</span> offset, <span style="color:#6ab825;font-weight:bold">auto</span> width&gt;
-    <span style="color:#6ab825;font-weight:bold">using</span> Field = BitFieldReadOnly&lt;address, offset, width, T&gt;;
-
-    <span style="color:#6ab825;font-weight:bold">static</span> T <span style="color:#447fcf">read</span>() { <span style="color:#6ab825;font-weight:bold">return</span> *<span style="color:#6ab825;font-weight:bold">reinterpret_cast</span>&lt;<span style="color:#6ab825;font-weight:bold">volatile</span> T*&gt;(address); }
-};
-</code></pre></div><p>The read function is a simple dereferencing of the address template parameter, and we create a Field type alias that fills in the address and type information down to a field. This is awesome because we only need to put down the address once when creating the type structure of the MCU. We&rsquo;ll also nest the register types of a peripheral into a struct for the peripheral, and ditto for the MCU. What we end up is the following (which is from the svd-alias code generator):</p>
-<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#6ab825;font-weight:bold">struct</span> <span style="color:#447fcf;text-decoration:underline">STM32L0x3</span> {
-    <span style="color:#999;font-style:italic">// General-purpose I/Os
-</span><span style="color:#999;font-style:italic"></span>    <span style="color:#6ab825;font-weight:bold">struct</span> <span style="color:#447fcf;text-decoration:underline">GPIOA</span> {
-		<span style="color:#6ab825;font-weight:bold">using</span> Mcu = STM32L0x3;
-        <span style="color:#999;font-style:italic">// GPIO port mode register
-</span><span style="color:#999;font-style:italic"></span>        <span style="color:#6ab825;font-weight:bold">struct</span> <span style="color:#447fcf;text-decoration:underline">MODER</span> : <span style="color:#6ab825;font-weight:bold">public</span> Register&lt;<span style="color:#3677a9">0x50000000</span>&gt; {
-            <span style="color:#6ab825;font-weight:bold">using</span> MODE0 = Field&lt;<span style="color:#3677a9">0</span>, <span style="color:#3677a9">2</span>&gt;;    <span style="color:#999;font-style:italic">// Port x configuration bits (y = 0..15)
-</span><span style="color:#999;font-style:italic"></span>            <span style="color:#6ab825;font-weight:bold">using</span> MODE1 = Field&lt;<span style="color:#3677a9">2</span>, <span style="color:#3677a9">2</span>&gt;;    <span style="color:#999;font-style:italic">// Port x configuration bits (y = 0..15)
-</span><span style="color:#999;font-style:italic"></span>            <span style="color:#6ab825;font-weight:bold">using</span> MODE2 = Field&lt;<span style="color:#3677a9">4</span>, <span style="color:#3677a9">2</span>&gt;;    <span style="color:#999;font-style:italic">// Port x configuration bits (y = 0..15)
-</span><span style="color:#999;font-style:italic"></span>            <span style="color:#6ab825;font-weight:bold">using</span> MODE3 = Field&lt;<span style="color:#3677a9">6</span>, <span style="color:#3677a9">2</span>&gt;;    <span style="color:#999;font-style:italic">// Port x configuration bits (y = 0..15)
-</span><span style="color:#999;font-style:italic"></span>			...
-        };
-        
-		<span style="color:#999;font-style:italic">// GPIO port input data register
-</span><span style="color:#999;font-style:italic"></span>        <span style="color:#6ab825;font-weight:bold">struct</span> <span style="color:#447fcf;text-decoration:underline">IDR</span> : <span style="color:#6ab825;font-weight:bold">public</span> RegisterReadOnly&lt;<span style="color:#3677a9">0x50000010</span>&gt; {
-            <span style="color:#6ab825;font-weight:bold">using</span> ID15 = Field&lt;<span style="color:#3677a9">15</span>, <span style="color:#3677a9">1</span>&gt;;    <span style="color:#999;font-style:italic">// Port input data bit (y = 0..15)
-</span><span style="color:#999;font-style:italic"></span>            <span style="color:#6ab825;font-weight:bold">using</span> ID14 = Field&lt;<span style="color:#3677a9">14</span>, <span style="color:#3677a9">1</span>&gt;;    <span style="color:#999;font-style:italic">// Port input data bit (y = 0..15)
-</span><span style="color:#999;font-style:italic"></span>            <span style="color:#6ab825;font-weight:bold">using</span> ID13 = Field&lt;<span style="color:#3677a9">13</span>, <span style="color:#3677a9">1</span>&gt;;    <span style="color:#999;font-style:italic">// Port input data bit (y = 0..15)
-</span><span style="color:#999;font-style:italic"></span>            <span style="color:#6ab825;font-weight:bold">using</span> ID12 = Field&lt;<span style="color:#3677a9">12</span>, <span style="color:#3677a9">1</span>&gt;;    <span style="color:#999;font-style:italic">// Port input data bit (y = 0..15)
-</span><span style="color:#999;font-style:italic"></span>			...
-		};
-	};
-};
-</code></pre></div><p>So that starts looking pretty slick pretty quick. The register access methods are passed down to the specific register definitions, and the Field alias matches the access type of the register too. Using the methods look like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#6ab825;font-weight:bold">using</span> Mcu = STM32L0x3;
-<span style="color:#6ab825;font-weight:bold">auto</span> value = Mcu::GPIOA::IDR::ID13::read();
-
-<span style="color:#6ab825;font-weight:bold">if</span> (value)
-    Mcu::GPIOA::MODER::MODE13::write(<span style="color:#3677a9">2</span>);
-</code></pre></div><p>Now what&rsquo;s really cool is that we unlock template metaprogramming and a bunch of compile-time computations. For example, I created a variadic template write method for a register that writes to multiple fields at the same time. To do this, it takes a parameter pack of &ldquo;Pair&rdquo; types which contain a field within the register and a value to set that field to. The bit math is handled at compile time, and we see that the multiple masked operations are optimized to one.</p>
+<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#6ab825;font-weight:bold">template</span> &lt;<span style="color:#6ab825;font-weight:bold">auto</span> address, <span style="color:#6ab825;font-weight:bold">typename</span> T = std::<span style="color:#6ab825;font-weight:bold">uint32_t</span>&gt;
+</span></span><span style="display:flex;"><span><span style="color:#6ab825;font-weight:bold">struct</span> <span style="color:#447fcf;text-decoration:underline">RegisterReadOnly</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#6ab825;font-weight:bold">template</span> &lt;<span style="color:#6ab825;font-weight:bold">auto</span> offset, <span style="color:#6ab825;font-weight:bold">auto</span> width&gt;
+</span></span><span style="display:flex;"><span>    <span style="color:#6ab825;font-weight:bold">using</span> Field = BitFieldReadOnly&lt;address, offset, width, T&gt;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#6ab825;font-weight:bold">static</span> T <span style="color:#447fcf">read</span>() { <span style="color:#6ab825;font-weight:bold">return</span> *<span style="color:#6ab825;font-weight:bold">reinterpret_cast</span>&lt;<span style="color:#6ab825;font-weight:bold">volatile</span> T*&gt;(address); }
+</span></span><span style="display:flex;"><span>};
+</span></span></code></pre></div><p>The read function is a simple dereferencing of the address template parameter, and we create a Field type alias that fills in the address and type information down to a field. This is awesome because we only need to put down the address once when creating the type structure of the MCU. We&rsquo;ll also nest the register types of a peripheral into a struct for the peripheral, and ditto for the MCU. What we end up is the following (which is from the svd-alias code generator):</p>
+<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#6ab825;font-weight:bold">struct</span> <span style="color:#447fcf;text-decoration:underline">STM32L0x3</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#999;font-style:italic">// General-purpose I/Os
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span>    <span style="color:#6ab825;font-weight:bold">struct</span> <span style="color:#447fcf;text-decoration:underline">GPIOA</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#6ab825;font-weight:bold">using</span> Mcu = STM32L0x3;
+</span></span><span style="display:flex;"><span>        <span style="color:#999;font-style:italic">// GPIO port mode register
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span>        <span style="color:#6ab825;font-weight:bold">struct</span> <span style="color:#447fcf;text-decoration:underline">MODER</span> : <span style="color:#6ab825;font-weight:bold">public</span> Register&lt;<span style="color:#3677a9">0x50000000</span>&gt; {
+</span></span><span style="display:flex;"><span>            <span style="color:#6ab825;font-weight:bold">using</span> MODE0 = Field&lt;<span style="color:#3677a9">0</span>, <span style="color:#3677a9">2</span>&gt;;    <span style="color:#999;font-style:italic">// Port x configuration bits (y = 0..15)
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span>            <span style="color:#6ab825;font-weight:bold">using</span> MODE1 = Field&lt;<span style="color:#3677a9">2</span>, <span style="color:#3677a9">2</span>&gt;;    <span style="color:#999;font-style:italic">// Port x configuration bits (y = 0..15)
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span>            <span style="color:#6ab825;font-weight:bold">using</span> MODE2 = Field&lt;<span style="color:#3677a9">4</span>, <span style="color:#3677a9">2</span>&gt;;    <span style="color:#999;font-style:italic">// Port x configuration bits (y = 0..15)
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span>            <span style="color:#6ab825;font-weight:bold">using</span> MODE3 = Field&lt;<span style="color:#3677a9">6</span>, <span style="color:#3677a9">2</span>&gt;;    <span style="color:#999;font-style:italic">// Port x configuration bits (y = 0..15)
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span>			...
+</span></span><span style="display:flex;"><span>        };
+</span></span><span style="display:flex;"><span>        
+</span></span><span style="display:flex;"><span>		<span style="color:#999;font-style:italic">// GPIO port input data register
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span>        <span style="color:#6ab825;font-weight:bold">struct</span> <span style="color:#447fcf;text-decoration:underline">IDR</span> : <span style="color:#6ab825;font-weight:bold">public</span> RegisterReadOnly&lt;<span style="color:#3677a9">0x50000010</span>&gt; {
+</span></span><span style="display:flex;"><span>            <span style="color:#6ab825;font-weight:bold">using</span> ID15 = Field&lt;<span style="color:#3677a9">15</span>, <span style="color:#3677a9">1</span>&gt;;    <span style="color:#999;font-style:italic">// Port input data bit (y = 0..15)
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span>            <span style="color:#6ab825;font-weight:bold">using</span> ID14 = Field&lt;<span style="color:#3677a9">14</span>, <span style="color:#3677a9">1</span>&gt;;    <span style="color:#999;font-style:italic">// Port input data bit (y = 0..15)
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span>            <span style="color:#6ab825;font-weight:bold">using</span> ID13 = Field&lt;<span style="color:#3677a9">13</span>, <span style="color:#3677a9">1</span>&gt;;    <span style="color:#999;font-style:italic">// Port input data bit (y = 0..15)
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span>            <span style="color:#6ab825;font-weight:bold">using</span> ID12 = Field&lt;<span style="color:#3677a9">12</span>, <span style="color:#3677a9">1</span>&gt;;    <span style="color:#999;font-style:italic">// Port input data bit (y = 0..15)
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span>			...
+</span></span><span style="display:flex;"><span>		};
+</span></span><span style="display:flex;"><span>	};
+</span></span><span style="display:flex;"><span>};
+</span></span></code></pre></div><p>So that starts looking pretty slick pretty quick. The register access methods are passed down to the specific register definitions, and the Field alias matches the access type of the register too. Using the methods look like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#6ab825;font-weight:bold">using</span> Mcu = STM32L0x3;
+</span></span><span style="display:flex;"><span><span style="color:#6ab825;font-weight:bold">auto</span> value = Mcu::GPIOA::IDR::ID13::read();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#6ab825;font-weight:bold">if</span> (value)
+</span></span><span style="display:flex;"><span>    Mcu::GPIOA::MODER::MODE13::write(<span style="color:#3677a9">2</span>);
+</span></span></code></pre></div><p>Now what&rsquo;s really cool is that we unlock template metaprogramming and a bunch of compile-time computations. For example, I created a variadic template write method for a register that writes to multiple fields at the same time. To do this, it takes a parameter pack of &ldquo;Pair&rdquo; types which contain a field within the register and a value to set that field to. The bit math is handled at compile time, and we see that the multiple masked operations are optimized to one.</p>
 <p>First let&rsquo;s see this in use. Assume all of GPIO Port A&rsquo;s pins are configured as outputs, but we want to set pins 1, 5, 6, 13, to 1, 0, 0, 1 respectively. The important part here is that other pins could be in any state, and we want to preserve that state when modifying our pins.</p>
-<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp">Mcu::GPIOA::ODR::write&lt;FieldPair&lt;
-    Mcu::GPIOA::ODR::ODR1, <span style="color:#3677a9">1</span>&gt;,
-    ClearField&lt;Mcu::GPIOA::ODR::ODR5&gt;,      <span style="color:#999;font-style:italic">// aliased FieldPair
-</span><span style="color:#999;font-style:italic"></span>    ClearField&lt;Mcu::GPIOA::ODR::ODR6&gt;,
-    SetField&lt;Mcu::GPIOA::ODR::ODR13&gt;        <span style="color:#999;font-style:italic">// aliased FieldPair
-</span><span style="color:#999;font-style:italic"></span>&gt;();
-</code></pre></div><p>It does seem verbose, but it&rsquo;s also safer because it can check to make sure that the fields belong to the register, and produce a compiler error (fail early, fail often as the saying goes). To prove that all the operations are optimized into one, we have the following generated assembly of the above (-Os optimization level):</p>
+<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>Mcu::GPIOA::ODR::write&lt;FieldPair&lt;
+</span></span><span style="display:flex;"><span>    Mcu::GPIOA::ODR::ODR1, <span style="color:#3677a9">1</span>&gt;,
+</span></span><span style="display:flex;"><span>    ClearField&lt;Mcu::GPIOA::ODR::ODR5&gt;,      <span style="color:#999;font-style:italic">// aliased FieldPair
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span>    ClearField&lt;Mcu::GPIOA::ODR::ODR6&gt;,
+</span></span><span style="display:flex;"><span>    SetField&lt;Mcu::GPIOA::ODR::ODR13&gt;        <span style="color:#999;font-style:italic">// aliased FieldPair
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span>&gt;();
+</span></span></code></pre></div><p>It does seem verbose, but it&rsquo;s also safer because it can check to make sure that the fields belong to the register, and produce a compiler error (fail early, fail often as the saying goes). To prove that all the operations are optimized into one, we have the following generated assembly of the above (-Os optimization level):</p>
 <pre tabindex="0"><code> 800004c:       4903            ldr     r1, [pc, #12]   ; (800005c)
  800004e:       4a04            ldr     r2, [pc, #16]   ; (8000060)
  8000050:       680b            ldr     r3, [r1, #0]
@@ -348,7 +346,6 @@ if(apply(read(Config::stopLength)) == Config::StopBits::one) {/*...*/}
  800005c:       50000014        .word   0x50000014
  8000060:       ffffdf9d        .word   0xffffdf9d
  8000064:       00002002        .word   0x00002002
-
 </code></pre><p>At the bottom we have the address of ODR, the mask, and the value respectively. The CPU loads the pointer to ODR, the mask, and then fetches the value at ODR, applies the mask to the value read from ODR &ndash; clearing fields we are modifying. Finally, it ORs the masked ODR with the values we are applying, and stores the modified ODR value to where we read it from. All these operations allow us to simply apply values to fields in a register</p>
 <p>One might think that applying the mask might prove inefficient when only bits are set in the register &ndash; and in that case only an OR is needed, but if we omit the two &ldquo;ClearFields&rdquo; in the above example we get:</p>
 <pre tabindex="0"><code> 800004c:       4a02            ldr     r2, [pc, #8]    ; (8000058)
@@ -362,16 +359,16 @@ if(apply(read(Config::stopLength)) == Config::StopBits::one) {/*...*/}
 </code></pre><p>And right there we can see the compiler is optimizing out the mask operation, which would be redundant in this situation.</p>
 <h3 id="todo-read-multiple-fields">TODO: read multiple fields</h3>
 <p>This one isn&rsquo;t implemented yet, but structured bindings from C++17 could be used to read multiple field values from a register at the same time. Let&rsquo;s read some digital inputs:</p>
-<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#6ab825;font-weight:bold">auto</span> [button, proximity, reed_switch] = Mcu::GPIOA::IDR::read&lt;
-    Mcu::GPIOA::IDR::IDR3,
-    Mcu::GPIOA::IDR::IDR5,
-    Mcu::GPIOA::IDR::IDR14
-&gt;();
-
-<span style="color:#6ab825;font-weight:bold">if</span> (button)
-    <span style="color:#999;font-style:italic">// do something
-</span><span style="color:#999;font-style:italic">// and so on
-</span></code></pre></div><p>This is just a brainstorm at the moment, but I wanted to show a parallel to writing to multiple fields on the same clock cycle. As with all these other modern C++ bare metal things I&rsquo;ve been playing with, I will be testing the generated assembly to make sure there are no abstraction costs, or important quirks due to the compiler implementation of structured bindings &ndash; so you might hear about this one later on.</p>
+<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#6ab825;font-weight:bold">auto</span> [button, proximity, reed_switch] = Mcu::GPIOA::IDR::read&lt;
+</span></span><span style="display:flex;"><span>    Mcu::GPIOA::IDR::IDR3,
+</span></span><span style="display:flex;"><span>    Mcu::GPIOA::IDR::IDR5,
+</span></span><span style="display:flex;"><span>    Mcu::GPIOA::IDR::IDR14
+</span></span><span style="display:flex;"><span>&gt;();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#6ab825;font-weight:bold">if</span> (button)
+</span></span><span style="display:flex;"><span>    <span style="color:#999;font-style:italic">// do something
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic">// and so on
+</span></span></span></code></pre></div><p>This is just a brainstorm at the moment, but I wanted to show a parallel to writing to multiple fields on the same clock cycle. As with all these other modern C++ bare metal things I&rsquo;ve been playing with, I will be testing the generated assembly to make sure there are no abstraction costs, or important quirks due to the compiler implementation of structured bindings &ndash; so you might hear about this one later on.</p>
 <h2 id="conclusion">Conclusion</h2>
 <p>While application programmers aren&rsquo;t going to be excited by all these extra tools for working at the register level, this library does provide a foundation for template based peripheral drivers which is what I&rsquo;ll be covering a lot of down the road. I can tell you so far that they are fun to write and work with, especially when you can bind configuration to the type, and use RAII to handle startup/shutdown of these peripherals. A good example here would be using a template parameter for a SPI driver that declares it to be in slave or master mode, and have the constructor handle all the setup. AND I should note that there is no abstraction cost for this stuff so far &ndash; Ok I&rsquo;m going to stop there and save this for later.</p>
 
@@ -498,7 +495,7 @@ if(apply(read(Config::stopLength)) == Config::StopBits::one) {/*...*/}
 
   <footer id="footer">
   <div class="footer-left">
-    Copyright  &copy; 2021  Matthew Knight 
+    Copyright  &copy; 2022  Matthew Knight 
   </div>
   <div class="footer-right">
     <nav>

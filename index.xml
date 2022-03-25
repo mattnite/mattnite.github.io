@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>mattnite blog</title>
+    <title>mattnite&#39;s blog</title>
     <link>https://mattnite.github.io/</link>
-    <description>Recent content on mattnite blog</description>
+    <description>Recent content on mattnite&#39;s blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <copyright>Matthew Knight</copyright>
@@ -14,7 +14,7 @@
       <pubDate>Sat, 25 Dec 2021 23:49:10 -0800</pubDate>
       
       <guid>https://mattnite.github.io/about/</guid>
-      <description>testing</description>
+      <description> </description>
     </item>
     
     <item>

@@ -9,9 +9,9 @@
   <link rel="stylesheet" href="https://latest.cactus.chat/style.css" type="text/css">
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title> @import and Packages | mattnite blog</title>
+  <title> @import and Packages | mattnite&#39;s blog</title>
   <link rel = 'canonical' href = 'https://mattnite.github.io/posts/import-and-packages/'>
-  <meta name="description" content="hello this is still in construction">
+  
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="all,follow">
   <meta name="googlebot" content="index,follow,snippet,archive">
@@ -223,52 +223,52 @@ foo/
     blarg.zig
 </code></pre><p>If your root file was <code>src/main.zig</code>, it could not import <code>map.zig</code> or <code>foo/blarg.zig</code>, but <code>src/parser/http.zig</code> could import <code>src/bar.zig</code> by doing <code>@import(&quot;../bar.zig&quot;)</code> because these are within the root&rsquo;s directory.</p>
 <p>The special case for package strings that you&rsquo;re familiar with is &ldquo;std&rdquo; which the compiler configures for you automatically. Some examples of imports:</p>
-<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-zig" data-lang="zig"><span style="color:#6ab825;font-weight:bold">const</span><span style="color:#666"> </span>std<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#24909d">@import</span>(<span style="color:#ed9d13">&#34;std&#34;</span>);<span style="color:#666">            </span><span style="color:#999;font-style:italic">// absolute classic
-</span><span style="color:#999;font-style:italic"></span><span style="color:#6ab825;font-weight:bold">const</span><span style="color:#666"> </span>mod<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#24909d">@import</span>(<span style="color:#ed9d13">&#34;dir/module.zig&#34;</span>);<span style="color:#666"> </span><span style="color:#999;font-style:italic">// import another file
-</span><span style="color:#999;font-style:italic"></span><span style="color:#6ab825;font-weight:bold">const</span><span style="color:#666"> </span>bad<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#24909d">@import</span>(<span style="color:#ed9d13">&#34;../bad.zig&#34;</span>);<span style="color:#666">     </span><span style="color:#999;font-style:italic">// not allowed
-</span><span style="color:#999;font-style:italic"></span><span style="color:#6ab825;font-weight:bold">const</span><span style="color:#666"> </span>pkg<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#24909d">@import</span>(<span style="color:#ed9d13">&#34;my_pkg&#34;</span>);<span style="color:#666">         </span><span style="color:#999;font-style:italic">// package import
-</span></code></pre></div><p>The other major detail here is that <code>@import()</code> returns a type &ndash; I like to visualize</p>
-<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-zig" data-lang="zig"><span style="color:#6ab825;font-weight:bold">const</span><span style="color:#666"> </span>mine<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#24909d">@import</span>(<span style="color:#ed9d13">&#34;my_file.zig&#34;</span>);<span style="color:#666">
-</span></code></pre></div><p>as:</p>
-<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-zig" data-lang="zig"><span style="color:#6ab825;font-weight:bold">const</span><span style="color:#666"> </span>mine<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">struct</span><span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#999;font-style:italic">// contents of my_file.zig:
-</span><span style="color:#999;font-style:italic"></span><span style="color:#666">    </span><span style="color:#999;font-style:italic">// pub const Int = usize;
-</span><span style="color:#999;font-style:italic"></span><span style="color:#666">    </span><span style="color:#999;font-style:italic">// ...
-</span><span style="color:#999;font-style:italic"></span>};<span style="color:#666">
-</span></code></pre></div><p>And now you can access <code>Int</code> via <code>mine.Int</code>. This is leads to a cool pattern where a file cleanly exports a struct by simply declaring members of a struct  in the root of a file:</p>
-<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-zig" data-lang="zig"><span style="color:#6ab825;font-weight:bold">const</span><span style="color:#666"> </span>Mine<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">struct</span><span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#999;font-style:italic">// contents of MyFile.zig:
-</span><span style="color:#999;font-style:italic"></span><span style="color:#666">    </span><span style="color:#999;font-style:italic">// data: []const u8,
-</span><span style="color:#999;font-style:italic"></span><span style="color:#666">    </span><span style="color:#999;font-style:italic">// num: usize,
-</span><span style="color:#999;font-style:italic"></span><span style="color:#666">    </span><span style="color:#999;font-style:italic">// ...
-</span><span style="color:#999;font-style:italic"></span>};<span style="color:#666">
-</span></code></pre></div><p>The convention here is to use CapitalCase for the filename.</p>
+<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-zig" data-lang="zig"><span style="display:flex;"><span><span style="color:#6ab825;font-weight:bold">const</span><span style="color:#666"> </span>std<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#24909d">@import</span>(<span style="color:#ed9d13">&#34;std&#34;</span>);<span style="color:#666">            </span><span style="color:#999;font-style:italic">// absolute classic
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span><span style="color:#6ab825;font-weight:bold">const</span><span style="color:#666"> </span>mod<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#24909d">@import</span>(<span style="color:#ed9d13">&#34;dir/module.zig&#34;</span>);<span style="color:#666"> </span><span style="color:#999;font-style:italic">// import another file
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span><span style="color:#6ab825;font-weight:bold">const</span><span style="color:#666"> </span>bad<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#24909d">@import</span>(<span style="color:#ed9d13">&#34;../bad.zig&#34;</span>);<span style="color:#666">     </span><span style="color:#999;font-style:italic">// not allowed
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span><span style="color:#6ab825;font-weight:bold">const</span><span style="color:#666"> </span>pkg<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#24909d">@import</span>(<span style="color:#ed9d13">&#34;my_pkg&#34;</span>);<span style="color:#666">         </span><span style="color:#999;font-style:italic">// package import
+</span></span></span></code></pre></div><p>The other major detail here is that <code>@import()</code> returns a type &ndash; I like to visualize</p>
+<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-zig" data-lang="zig"><span style="display:flex;"><span><span style="color:#6ab825;font-weight:bold">const</span><span style="color:#666"> </span>mine<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#24909d">@import</span>(<span style="color:#ed9d13">&#34;my_file.zig&#34;</span>);<span style="color:#666">
+</span></span></span></code></pre></div><p>as:</p>
+<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-zig" data-lang="zig"><span style="display:flex;"><span><span style="color:#6ab825;font-weight:bold">const</span><span style="color:#666"> </span>mine<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">struct</span><span style="color:#666"> </span>{<span style="color:#666">
+</span></span></span><span style="display:flex;"><span><span style="color:#666">    </span><span style="color:#999;font-style:italic">// contents of my_file.zig:
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span><span style="color:#666">    </span><span style="color:#999;font-style:italic">// pub const Int = usize;
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span><span style="color:#666">    </span><span style="color:#999;font-style:italic">// ...
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span>};<span style="color:#666">
+</span></span></span></code></pre></div><p>And now you can access <code>Int</code> via <code>mine.Int</code>. This is leads to a cool pattern where a file cleanly exports a struct by simply declaring members of a struct  in the root of a file:</p>
+<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-zig" data-lang="zig"><span style="display:flex;"><span><span style="color:#6ab825;font-weight:bold">const</span><span style="color:#666"> </span>Mine<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">struct</span><span style="color:#666"> </span>{<span style="color:#666">
+</span></span></span><span style="display:flex;"><span><span style="color:#666">    </span><span style="color:#999;font-style:italic">// contents of MyFile.zig:
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span><span style="color:#666">    </span><span style="color:#999;font-style:italic">// data: []const u8,
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span><span style="color:#666">    </span><span style="color:#999;font-style:italic">// num: usize,
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span><span style="color:#666">    </span><span style="color:#999;font-style:italic">// ...
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-style:italic"></span>};<span style="color:#666">
+</span></span></span></code></pre></div><p>The convention here is to use CapitalCase for the filename.</p>
 <h1 id="packages">Packages</h1>
 <p>Packages are ultimately communicated to the zig compiler as command line arguments, I will leave it to the reader to research <code>--pkg-begin</code> and <code>--pkg-end</code> on their own. Instead I&rsquo;ll demonstrate what manual package configuration in <code>build.zig</code> looks like &ndash; at the end of the day, this work is done for you by the package manager.</p>
 <p>Every package is made up of one or more files, with one of them being the root. All these files are connected through file imports, and any package imports refer to the root file of another package. In the following figure we have package A and B, made up of (<code>src/main.zig</code>, <code>src/file.zig</code>) and (<code>root.zig</code>, <code>src/foo.zig</code>, <code>src/bar.zig</code>) respectively, and the files in package A import B. Package imports are bold arrows with a label corresponding to the string used in <code>@import()</code>.</p>
 <p><img src="https://zig.news/uploads/articles/jtsgwk4mxi6pg4npg9e6.png" alt="Alt Text"></p>
 <p>If we wanted to use package A in a program we wrote, we would have the following in our <code>build.zig</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-zig" data-lang="zig"><span style="color:#6ab825;font-weight:bold">const</span><span style="color:#666"> </span>std<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#24909d">@import</span>(<span style="color:#ed9d13">&#34;std&#34;</span>);<span style="color:#666">
-</span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">const</span><span style="color:#666"> </span>Builder<span style="color:#666"> </span>=<span style="color:#666"> </span>std.build.Builder;<span style="color:#666">
-</span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">const</span><span style="color:#666"> </span>Pkg<span style="color:#666"> </span>=<span style="color:#666"> </span>std.build.Pkg;<span style="color:#666">
-</span><span style="color:#666">
-</span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">const</span><span style="color:#666"> </span>pkg_a<span style="color:#666"> </span>=<span style="color:#666"> </span>Pkg{<span style="color:#666">
-</span><span style="color:#666">    </span>.name<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#ed9d13">&#34;a&#34;</span>,<span style="color:#666">
-</span><span style="color:#666">    </span>.path<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#ed9d13">&#34;/some/path/to/src/main.zig&#34;</span>,<span style="color:#666">
-</span><span style="color:#666">    </span>.dependencies<span style="color:#666"> </span>=<span style="color:#666"> </span>&amp;[_]Pkg{<span style="color:#666">
-</span><span style="color:#666">        </span>Pkg{<span style="color:#666">
-</span><span style="color:#666">            </span>.name<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#ed9d13">&#34;b&#34;</span>,<span style="color:#666">
-</span><span style="color:#666">            </span>.path<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#ed9d13">&#34;rel/path/to/root.zig&#34;</span>,<span style="color:#666">
-</span><span style="color:#666">            </span>.dependencies<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">null</span>,<span style="color:#666">
-</span><span style="color:#666">        </span>},<span style="color:#666">
-</span><span style="color:#666">    </span>},<span style="color:#666">
-</span><span style="color:#666"></span>};<span style="color:#666">
-</span><span style="color:#666">
-</span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">fn</span><span style="color:#666"> </span>build(b:<span style="color:#666"> </span>*Builder)<span style="color:#666"> </span>!<span style="color:#6ab825;font-weight:bold">void</span><span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">const</span><span style="color:#666"> </span>exe<span style="color:#666"> </span>=<span style="color:#666"> </span>b.addExecutable(<span style="color:#ed9d13">&#34;my_program&#34;</span>,<span style="color:#666"> </span><span style="color:#ed9d13">&#34;src/main.zig&#34;</span>);<span style="color:#666">
-</span><span style="color:#666">    </span>exe.addPackage(pkg_a);<span style="color:#666">
-</span><span style="color:#666"></span>}<span style="color:#666">
-</span></code></pre></div><p>So in order to use A, you need to tell it where to find &ldquo;b&rdquo;, and this is nice because it is trivial to drop a different implementation of package B. The configuration for &ldquo;b&rdquo; only counts inside files belonging to package A, we will not be able to import package B in our program, to do that we would need to explicitly configure that relationship with another call to <code>addPackage()</code>. Each package has its own import namespace and this allows for situations where different packages import the same code using different import strings:</p>
+<div class="highlight"><pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-zig" data-lang="zig"><span style="display:flex;"><span><span style="color:#6ab825;font-weight:bold">const</span><span style="color:#666"> </span>std<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#24909d">@import</span>(<span style="color:#ed9d13">&#34;std&#34;</span>);<span style="color:#666">
+</span></span></span><span style="display:flex;"><span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">const</span><span style="color:#666"> </span>Builder<span style="color:#666"> </span>=<span style="color:#666"> </span>std.build.Builder;<span style="color:#666">
+</span></span></span><span style="display:flex;"><span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">const</span><span style="color:#666"> </span>Pkg<span style="color:#666"> </span>=<span style="color:#666"> </span>std.build.Pkg;<span style="color:#666">
+</span></span></span><span style="display:flex;"><span><span style="color:#666">
+</span></span></span><span style="display:flex;"><span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">const</span><span style="color:#666"> </span>pkg_a<span style="color:#666"> </span>=<span style="color:#666"> </span>Pkg{<span style="color:#666">
+</span></span></span><span style="display:flex;"><span><span style="color:#666">    </span>.name<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#ed9d13">&#34;a&#34;</span>,<span style="color:#666">
+</span></span></span><span style="display:flex;"><span><span style="color:#666">    </span>.path<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#ed9d13">&#34;/some/path/to/src/main.zig&#34;</span>,<span style="color:#666">
+</span></span></span><span style="display:flex;"><span><span style="color:#666">    </span>.dependencies<span style="color:#666"> </span>=<span style="color:#666"> </span>&amp;[_]Pkg{<span style="color:#666">
+</span></span></span><span style="display:flex;"><span><span style="color:#666">        </span>Pkg{<span style="color:#666">
+</span></span></span><span style="display:flex;"><span><span style="color:#666">            </span>.name<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#ed9d13">&#34;b&#34;</span>,<span style="color:#666">
+</span></span></span><span style="display:flex;"><span><span style="color:#666">            </span>.path<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#ed9d13">&#34;rel/path/to/root.zig&#34;</span>,<span style="color:#666">
+</span></span></span><span style="display:flex;"><span><span style="color:#666">            </span>.dependencies<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">null</span>,<span style="color:#666">
+</span></span></span><span style="display:flex;"><span><span style="color:#666">        </span>},<span style="color:#666">
+</span></span></span><span style="display:flex;"><span><span style="color:#666">    </span>},<span style="color:#666">
+</span></span></span><span style="display:flex;"><span><span style="color:#666"></span>};<span style="color:#666">
+</span></span></span><span style="display:flex;"><span><span style="color:#666">
+</span></span></span><span style="display:flex;"><span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">fn</span><span style="color:#666"> </span>build(b:<span style="color:#666"> </span>*Builder)<span style="color:#666"> </span>!<span style="color:#6ab825;font-weight:bold">void</span><span style="color:#666"> </span>{<span style="color:#666">
+</span></span></span><span style="display:flex;"><span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">const</span><span style="color:#666"> </span>exe<span style="color:#666"> </span>=<span style="color:#666"> </span>b.addExecutable(<span style="color:#ed9d13">&#34;my_program&#34;</span>,<span style="color:#666"> </span><span style="color:#ed9d13">&#34;src/main.zig&#34;</span>);<span style="color:#666">
+</span></span></span><span style="display:flex;"><span><span style="color:#666">    </span>exe.addPackage(pkg_a);<span style="color:#666">
+</span></span></span><span style="display:flex;"><span><span style="color:#666"></span>}<span style="color:#666">
+</span></span></span></code></pre></div><p>So in order to use A, you need to tell it where to find &ldquo;b&rdquo;, and this is nice because it is trivial to drop a different implementation of package B. The configuration for &ldquo;b&rdquo; only counts inside files belonging to package A, we will not be able to import package B in our program, to do that we would need to explicitly configure that relationship with another call to <code>addPackage()</code>. Each package has its own import namespace and this allows for situations where different packages import the same code using different import strings:</p>
 <p><img src="https://zig.news/uploads/articles/1sy4q1jybv0mce9e92sh.png" alt="Alt Text"></p>
 <p>and it allows for different packages to be referenced with the same string:</p>
 <p><img src="https://zig.news/uploads/articles/hb430uxu57gtpd6v4oky.png" alt="Alt Text"></p>
@@ -385,7 +385,7 @@ foo/
 
   <footer id="footer">
   <div class="footer-left">
-    Copyright  &copy; 2021  Matthew Knight 
+    Copyright  &copy; 2022  Matthew Knight 
   </div>
   <div class="footer-right">
     <nav>
