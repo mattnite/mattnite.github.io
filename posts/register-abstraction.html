@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 2.0.17">
+<title>Template Metaprogramming For Register Abstraction</title>
+<link rel="stylesheet" href="./../static/style.css">
+<link rel="stylesheet" href="../highlight/styles/atom-one-dark-reasonable.min.css">
+</head>
+<body class="article">
+<div id="header">
+<h1>Template Metaprogramming For Register Abstraction</h1>
+<div class="details">
+<span id="revdate">2019-09-03</span>
+</div>
+</div>
+<div id="content">
+<div id="preamble">
+<div class="sectionbody">
+<script src="../highlight/highlight.min.js"></script>
+<script
+  type="text/javascript"
+  src="../highlight/languages/zig.min.js"
+></script>
+<script type="text/javascript">
+  hljs.initHighlightingOnLoad();
+</script>
+<div class="paragraph">
+<p>It&#8217;s been a while since my last post and I&#8217;ve got a lot of cool bare metal stuff to show you guys. This one is going to go over different methods of manipulating Special Function Registers (SFRs), and to end it I&#8217;ll be covering a method that encodes all the SFRs of a microcontroller into a C++ type which will allow us to use template metaprogramming!. Let&#8217;s get this damn thing on the road:</p>
+</div>
+<div class="paragraph">
+<p>When we first learn how to program MCUs in school, we&#8217;re told how to set, clear, and toggle bits using logical operators:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-c hljs" data-lang="c">// setting bit 3
+SOME_REGISTER |= (1 &lt;&lt; 3);
+
+// clearing bit 5 and 24
+SOME_REGISTER &amp;= ~((1 &lt;&lt; 5) | (1 &lt;&lt; 24));
+
+// read and write value to a field
+some_variable = (0xe00 &amp; SOME_REGISTER) &gt;&gt; 9;
+SOME_REGISTER &amp;= ~0xe00 &amp; (2 &lt;&lt; 9);</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then in different vendor SDKs and CMSIS there is the use of macros to make these a bit more readable.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-c hljs" data-lang="c">SET_BITS(SOME_REGISTER, BIT3);
+CLEAR_BITS(SOME_REGISTER, BIT5 | BIT24);
+
+// CMSIS Field Reading and writing
+id = _FLD2VAL(SCB_CPUID_REVISION, SCB-&gt;CPUID);
+SCB-&gt;CPUID = _VAL2FLD(SCB_CPUID_REVISION, 0x3) | _VAL2FLD(SCB_CPUID_VARIANT, 0x3);</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The CMSIS macro <code>_VAL2FLD</code> is defined as the following:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">#define _VAL2FLD(field, value)    ((value &lt;&lt; field ## _Pos) &amp; field ## _Msk)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>It shifts the value by the bit offset, and masks it so that it doesn&#8217;t potentially overflow into any other fields. This is nice, but all that is required is for there to be a FIELD_Pos and FIELD_Msk defined, so one could incorrectly use field defines for a different register with absolutely zero compiler errors or even warnings.</p>
+</div>
+<div class="paragraph">
+<p>And this is the issue I have with macros, it&#8217;s just blind text generation and there&#8217;s too much room for abuse without any sort of error checking. That&#8217;s why I prefer leveraging the compiler or language features instead. I&#8217;m not 100% opposed though, for example, googletest does a great job at using macros as an interface for the test framework.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_bitfields"><a class="anchor" href="#_bitfields"></a>bitfields</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Continuing on, the next logical step is to use using bitfields:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">struct SomeRegister {
+     unsigned int foo : 1;
+     unsigned int bar : 3;
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>See that looks good, you even get to have a named, guarded range of bits that won&#8217;t spill into any others! oh wait but let&#8217;s just read this from the standard:</p>
+</div>
+<div class="paragraph">
+<p><em>C11 §6.7.2.1:</em> <em>"The order of allocation of bit-fields within a unit (high-order to low-order or low-order to high-order) is implementation-defined."</em></p>
+</div>
+<div class="paragraph">
+<p>So, if we define an SFR with certain bit fields the compiler is able to order them however it likes which is a huge problem. Even if the compiler we&#8217;re using ordered them as the user defined, continuing with this option means basing a project on undefined behaviour that might change between compilers or different versions of the same compiler. We&#8217;re done here.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_kvasir"><a class="anchor" href="#_kvasir"></a>kvasir</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Next up we have <a href="https://github.com/kvasir-io/kvasir">kvasir</a> which is a modern C library that has a number of functionalities ("boost but for a different domain"), but I'm going to focus on their register abstraction since that's what we're here for today. They claim that "Despite the fact that we use modern C tools under the hood the public interface is quite 'C like'". A good approach since most embedded development is still done in C.</p>
+</div>
+<div class="paragraph">
+<p>kvasir takes System View Description (SVD) files, which is a specific XML schema for Cortex-M MCUs, and runs its own code generator to create all the hardware specific code. Writing and reading to a register looks like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">apply(clear(AHBClock::Enabled::spi0),
+    set(AHBClock::Enabled::spi1),
+    set(AHBClock::Enabled::i2c0));
+
+if(apply(read(Config::stopLength)) == Config::StopBits::one) {/*...*/}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>I really like the code generation from SVD files to account for different SFR memory locations accross different MCUs, but I&#8217;d like a more C++ like interface that treats the registers and bit fields as objects or types&#8201;&#8212;&#8201;and this brings us to our final register abstraction method:</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_bitfield_class_template"><a class="anchor" href="#_bitfield_class_template"></a>BitField Class Template</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Ok so this one here is my favourite, it is inspired by <a href="https://preshing.com/20150324/safe-bitfields-in-cpp/">this</a> and <a href="https://blog.codef00.com/2014/12/06/portable-bitfields-using-c11">this</a> blog posts, and it&#8217;s pretty simple and straight forward. You have a BitField class template that takes template parameters for the address, offset, and static methods for accessing the field. As well as an underlying integral type for defining the size of the memory location so that we can handle other architectures besides 32-bit.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template &lt;auto address, auto offset, auto width, typename T = std::uint32_t&gt;
+class BitField {
+    static T const max = (1 &lt;&lt; width) - 1;
+    static T const mask = max &lt;&lt; offset;
+
+    static T read() {
+        return (*reinterpret_cast&lt;volatile T*&gt;(address) &amp; mask) &gt;&gt; offset;
+    }
+
+    static void write(T val) {
+        auto ptr = reinterpret_cast&lt;volatile T*&gt;(address);
+        *ptr = (*ptr &amp; ~mask) | (mask &amp; (val &lt;&lt; offset));
+    }
+};</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s say we have a clock enable for a gpio port, the register it&#8217;s located is at 0x5000, and it&#8217;s a single bit located at bit 7. We&#8217;d define and use it as the following:</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+this is an oversimplified example to build on for what&#8217;s coming next, so don&#8217;t judge :P.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">using ClockFlag = BitField&lt;0x5000, 7, 1&gt;;
+
+auto enabled = ClockFlag::read();
+if (!enabled)
+    ClockFlag::write(1);</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once we alias the type of the bitfield flag, the operations for reading and writing are clean and readable with those static methods. If we were to write two to the flag, it would be masked off, and we would effectively be writing zero. The interface for the class template could be expanded to include SFINAEd methods for setting and clearing field values if the width is one, or access to some of the intermediate values so that the user can determine the max value of the field.</p>
+</div>
+<div class="paragraph">
+<p>Now we have a building block to create a type for a specific MCU.</p>
+</div>
+<div class="sect2">
+<h3 id="_svd_alias"><a class="anchor" href="#_svd_alias"></a>svd-alias</h3>
+<div class="paragraph">
+<p>Since we are using type aliases to "define" different bit fields, and we&#8217;ll follow in kvasir&#8217;s steps in using SVD files to generate code, I&#8217;ve named this project svd-alias&#8201;&#8212;&#8201;I know, pretty boring. In the SVD schema, there is the possibility to define read/write access to a register, so we&#8217;ll be creating base classes to contain read and write methods, and inheriting from them to enable certain types of access. If you try writing to a read-only register, or one of its bit fields, you get a compiler error. This has already come in handy for me because I made an incorrect assumption on the operation of a peripheral while developing a driver and the compiler error got me on the right track.</p>
+</div>
+<div class="paragraph">
+<p>The class template for a read only register will look like the following:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template &lt;auto address, typename T = std::uint32_t&gt;
+struct RegisterReadOnly {
+    template &lt;auto offset, auto width&gt;
+    using Field = BitFieldReadOnly&lt;address, offset, width, T&gt;;
+
+    static T read() { return *reinterpret_cast&lt;volatile T*&gt;(address); }
+};</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The read function is a simple dereferencing of the address template parameter, and we create a Field type alias that fills in the address and type information down to a field. This is awesome because we only need to put down the address once when creating the type structure of the MCU. We&#8217;ll also nest the register types of a peripheral into a struct for the peripheral, and ditto for the MCU. What we end up is the following (which is from the svd-alias code generator):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">struct STM32L0x3 {
+    // General-purpose I/Os
+    struct GPIOA {
+		using Mcu = STM32L0x3;
+        // GPIO port mode register
+        struct MODER : public Register&lt;0x50000000&gt; {
+            using MODE0 = Field&lt;0, 2&gt;;    // Port x configuration bits (y = 0..15)
+            using MODE1 = Field&lt;2, 2&gt;;    // Port x configuration bits (y = 0..15)
+            using MODE2 = Field&lt;4, 2&gt;;    // Port x configuration bits (y = 0..15)
+            using MODE3 = Field&lt;6, 2&gt;;    // Port x configuration bits (y = 0..15)
+			...
+        };
+
+		// GPIO port input data register
+        struct IDR : public RegisterReadOnly&lt;0x50000010&gt; {
+            using ID15 = Field&lt;15, 1&gt;;    // Port input data bit (y = 0..15)
+            using ID14 = Field&lt;14, 1&gt;;    // Port input data bit (y = 0..15)
+            using ID13 = Field&lt;13, 1&gt;;    // Port input data bit (y = 0..15)
+            using ID12 = Field&lt;12, 1&gt;;    // Port input data bit (y = 0..15)
+			...
+		};
+	};
+};</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>So that starts looking pretty slick pretty quick. The register access methods are passed down to the specific register definitions, and the Field alias matches the access type of the register too. Using the methods look like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">using Mcu = STM32L0x3;
+auto value = Mcu::GPIOA::IDR::ID13::read();
+
+if (value)
+    Mcu::GPIOA::MODER::MODE13::write(2);</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now what&#8217;s really cool is that we unlock template metaprogramming and a bunch of compile-time computations. For example, I created a variadic template write method for a register that writes to multiple fields at the same time. To do this, it takes a parameter pack of "Pair" types which contain a field within the register and a value to set that field to. The bit math is handled at compile time, and we see that the multiple masked operations are optimized to one.</p>
+</div>
+<div class="paragraph">
+<p>First let&#8217;s see this in use. Assume all of GPIO Port A&#8217;s pins are configured as outputs, but we want to set pins 1, 5, 6, 13, to 1, 0, 0, 1 respectively. The important part here is that other pins could be in any state, and we want to preserve that state when modifying our pins.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">Mcu::GPIOA::ODR::write&lt;FieldPair&lt;
+    Mcu::GPIOA::ODR::ODR1, 1&gt;,
+    ClearField&lt;Mcu::GPIOA::ODR::ODR5&gt;,      // aliased FieldPair
+    ClearField&lt;Mcu::GPIOA::ODR::ODR6&gt;,
+    SetField&lt;Mcu::GPIOA::ODR::ODR13&gt;        // aliased FieldPair
+&gt;();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>It does seem verbose, but it&#8217;s also safer because it can check to make sure that the fields belong to the register, and produce a compiler error (fail early, fail often as the saying goes). To prove that all the operations are optimized into one, we have the following generated assembly of the above (-Os optimization level):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs"> 800004c:       4903            ldr     r1, [pc, #12]   ; (800005c)
+ 800004e:       4a04            ldr     r2, [pc, #16]   ; (8000060)
+ 8000050:       680b            ldr     r3, [r1, #0]
+ 8000052:       401a            ands    r2, r3
+ 8000054:       4b03            ldr     r3, [pc, #12]   ; (8000064)
+ 8000056:       4313            orrs    r3, r2
+ 8000058:       600b            str     r3, [r1, #0]
+
+ 800005c:       50000014        .word   0x50000014
+ 8000060:       ffffdf9d        .word   0xffffdf9d
+ 8000064:       00002002        .word   0x00002002</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>At the bottom we have the address of ODR, the mask, and the value respectively. The CPU loads the pointer to ODR, the mask, and then fetches the value at ODR, applies the mask to the value read from ODR&#8201;&#8212;&#8201;clearing fields we are modifying. Finally, it ORs the masked ODR with the values we are applying, and stores the modified ODR value to where we read it from. All these operations allow us to simply apply values to fields in a register.</p>
+</div>
+<div class="paragraph">
+<p>One might think that applying the mask might prove inefficient when only bits are set in the register&#8201;&#8212;&#8201;and in that case only an OR is needed, but if we omit the two "ClearFields" in the above example we get:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs"> 800004c:       4a02            ldr     r2, [pc, #8]    ; (8000058)
+ 800004e:       4903            ldr     r1, [pc, #12]   ; (800005c)
+ 8000050:       6813            ldr     r3, [r2, #0]
+ 8000052:       430b            orrs    r3, r1
+ 8000054:       6013            str     r3, [r2, #0]
+
+ 8000058:       50000014        .word   0x50000014
+ 800005c:       00002002        .word   0x00002002</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>And right there we can see the compiler is optimizing out the mask operation, which would be redundant in this situation.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_todo_read_multiple_fields"><a class="anchor" href="#_todo_read_multiple_fields"></a>TODO: read multiple fields</h3>
+<div class="paragraph">
+<p>This one isn&#8217;t implemented yet, but structured bindings from C++17 could be used to read multiple field values from a register at the same time. Let&#8217;s read some digital inputs:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">auto [button, proximity, reed_switch] = Mcu::GPIOA::IDR::read&lt;
+    Mcu::GPIOA::IDR::IDR3,
+    Mcu::GPIOA::IDR::IDR5,
+    Mcu::GPIOA::IDR::IDR14
+&gt;();
+
+if (button)
+    // do something
+// and so on</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This is just a brainstorm at the moment, but I wanted to show a parallel to writing to multiple fields on the same clock cycle. As with all these other modern C++ bare metal things I&#8217;ve been playing with, I will be testing the generated assembly to make sure there are no abstraction costs, or important quirks due to the compiler implementation of structured bindings&#8201;&#8212;&#8201;so you might hear about this one later on.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_conclusion"><a class="anchor" href="#_conclusion"></a>Conclusion</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>While application programmers aren&#8217;t going to be excited by all these extra tools for working at the register level, this library does provide a foundation for template based peripheral drivers which is what I&#8217;ll be covering a lot of down the road. I can tell you so far that they are fun to write and work with, especially when you can bind configuration to the type, and use RAII to handle startup/shutdown of these peripherals. A good example here would be using a template parameter for a SPI driver that declares it to be in slave or master mode, and have the constructor handle all the setup. AND I should note that there is no abstraction cost for this stuff so far&#8201;&#8212;&#8201;Ok I&#8217;m going to stop there and save this for later.</p>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+</div>
+</div>
+<script src="../highlight/highlight.min.js"></script>
+<script>
+if (!hljs.initHighlighting.called) {
+  hljs.initHighlighting.called = true
+  ;[].slice.call(document.querySelectorAll('pre.highlight > code')).forEach(function (el) { hljs.highlightBlock(el) })
+}
+</script>
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  messageStyle: "none",
+  tex2jax: {
+    inlineMath: [["\\(", "\\)"]],
+    displayMath: [["\\[", "\\]"]],
+    ignoreClass: "nostem|nolatexmath"
+  },
+  asciimath2jax: {
+    delimiters: [["\\$", "\\$"]],
+    ignoreClass: "nostem|noasciimath"
+  },
+  TeX: { equationNumbers: { autoNumber: "none" } }
+})
+MathJax.Hub.Register.StartupHook("AsciiMath Jax Ready", function () {
+  MathJax.InputJax.AsciiMath.postfilterHooks.Add(function (data, node) {
+    if ((node = data.script.parentNode) && (node = node.parentNode) && node.classList.contains("stemblock")) {
+      data.math.root.display = "block"
+    }
+    return data
+  })
+})
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_HTMLorMML"></script>
+</body>
+</html>

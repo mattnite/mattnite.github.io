@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 2.0.17">
+<title>@import and Packages</title>
+<link rel="stylesheet" href="./../static/style.css">
+<link rel="stylesheet" href="../highlight/styles/atom-one-dark-reasonable.min.css">
+</head>
+<body class="article">
+<div id="header">
+<h1>@import and Packages</h1>
+<div class="details">
+<span id="revdate">2021-07-27</span>
+</div>
+</div>
+<div id="content">
+<div id="preamble">
+<div class="sectionbody">
+<script src="../highlight/highlight.min.js"></script>
+<script
+  type="text/javascript"
+  src="../highlight/languages/zig.min.js"
+></script>
+<script type="text/javascript">
+  hljs.initHighlightingOnLoad();
+</script>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_import"><a class="anchor" href="#_import"></a>@import()</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The import builtin is how you use code from outside your file. A string literal is given as an argument and this is either a relative path to another file or an arbitrary string configured to represent a package. An important detail here is that the path case cannot reach above the root file, so let&#8217;s say we have the following filesystem:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs">map.zig
+src/
+    main.zig
+    bar.zig
+    parser/
+        http.zig
+foo/
+    blarg.zig</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If your root file was <code>src/main.zig</code>, it could not import <code>map.zig</code> or <code>foo/blarg.zig</code>, but <code>src/parser/http.zig</code> could import <code>src/bar.zig</code> by doing <code>@import("../bar.zig")</code> because these are within the root&#8217;s directory.</p>
+</div>
+<div class="paragraph">
+<p>The special case for package strings that you&#8217;re familiar with is "std" which the compiler configures for you automatically. Some examples of imports:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-zig hljs" data-lang="zig">const std = @import("std");            // absolute classic
+const mod = @import("dir/module.zig"); // import another file
+const bad = @import("../bad.zig");     // not allowed
+const pkg = @import("my_pkg");         // package import</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The other major detail here is that <code>@import()</code> returns a type&#8201;&#8212;&#8201;I like to visualize</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-zig hljs" data-lang="zig">const mine = @import("my_file.zig");</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>as:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-zig hljs" data-lang="zig">const mine = struct {
+    // contents of my_file.zig:
+    // pub const Int = usize;
+    // ...
+};</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>And now you can access <code>Int</code> via <code>mine.Int</code>. This is leads to a cool pattern where a file cleanly exports a struct by simply declaring members of a struct  in the root of a file:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-zig hljs" data-lang="zig">const Mine = struct {
+    // contents of MyFile.zig:
+    // data: []const u8,
+    // num: usize,
+    // ...
+};</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The convention here is to use CapitalCase for the filename.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_packages"><a class="anchor" href="#_packages"></a>Packages</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Packages are ultimately communicated to the zig compiler as command line arguments, I will leave it to the reader to research <code>--pkg-begin</code> and <code>--pkg-end</code> on their own. Instead I&#8217;ll demonstrate what manual package configuration in <code>build.zig</code> looks like&#8201;&#8212;&#8201;at the end of the day, this work is done for you by the package manager.</p>
+</div>
+<div class="paragraph">
+<p>Every package is made up of one or more files, with one of them being the root. All these files are connected through file imports, and any package imports refer to the root file of another package. In the following figure we have package A and B, made up of (<code>src/main.zig</code>, <code>src/file.zig</code>) and (<code>root.zig</code>, <code>src/foo.zig</code>, <code>src/bar.zig</code>) respectively, and the files in package A import B. Package imports are bold arrows with a label corresponding to the string used in <code>@import()</code>.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://zig.news/uploads/articles/jtsgwk4mxi6pg4npg9e6.png" alt="jtsgwk4mxi6pg4npg9e6">
+</div>
+</div>
+<div class="paragraph">
+<p>If we wanted to use package A in a program we wrote, we would have the following in our <code>build.zig</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-zig hljs" data-lang="zig">const std = @import("std");
+const Builder = std.build.Builder;
+const Pkg = std.build.Pkg;
+
+const pkg_a = Pkg{
+    .name = "a",
+    .path = "/some/path/to/src/main.zig",
+    .dependencies = &amp;[_]Pkg{
+        Pkg{
+            .name = "b",
+            .path = "rel/path/to/root.zig",
+            .dependencies = null,
+        },
+    },
+};
+
+pub fn build(b: *Builder) !void {
+    const exe = b.addExecutable("my_program", "src/main.zig");
+    exe.addPackage(pkg_a);
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>So in order to use A, you need to tell it where to find "b", and this is nice because it is trivial to drop a different implementation of package B. The configuration for "b" only counts inside files belonging to package A, we will not be able to import package B in our program, to do that we would need to explicitly configure that relationship with another call to <code>addPackage()</code>. Each package has its own import namespace and this allows for situations where different packages import the same code using different import strings:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://zig.news/uploads/articles/1sy4q1jybv0mce9e92sh.png" alt="1sy4q1jybv0mce9e92sh">
+</div>
+</div>
+<div class="paragraph">
+<p>and it allows for different packages to be referenced with the same string:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://zig.news/uploads/articles/hb430uxu57gtpd6v4oky.png" alt="hb430uxu57gtpd6v4oky">
+</div>
+</div>
+<div class="paragraph">
+<p>This makes for a simple and consistent medium in which to perform package management, where package resolution, replacement, and upgrading challenges are more about user experience rather than technical feasibility.</p>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+</div>
+</div>
+<script src="../highlight/highlight.min.js"></script>
+<script>
+if (!hljs.initHighlighting.called) {
+  hljs.initHighlighting.called = true
+  ;[].slice.call(document.querySelectorAll('pre.highlight > code')).forEach(function (el) { hljs.highlightBlock(el) })
+}
+</script>
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  messageStyle: "none",
+  tex2jax: {
+    inlineMath: [["\\(", "\\)"]],
+    displayMath: [["\\[", "\\]"]],
+    ignoreClass: "nostem|nolatexmath"
+  },
+  asciimath2jax: {
+    delimiters: [["\\$", "\\$"]],
+    ignoreClass: "nostem|noasciimath"
+  },
+  TeX: { equationNumbers: { autoNumber: "none" } }
+})
+MathJax.Hub.Register.StartupHook("AsciiMath Jax Ready", function () {
+  MathJax.InputJax.AsciiMath.postfilterHooks.Add(function (data, node) {
+    if ((node = data.script.parentNode) && (node = node.parentNode) && node.classList.contains("stemblock")) {
+      data.math.root.display = "block"
+    }
+    return data
+  })
+})
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_HTMLorMML"></script>
+</body>
+</html>
