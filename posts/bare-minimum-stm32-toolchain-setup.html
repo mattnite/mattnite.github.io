@@ -30,10 +30,11 @@
 <div class="paragraph">
 <p>The first thing I’m going to cover here is setting up a bare minimum environment that cross-compiles for a microcontroller (MCU). You can probably do this for Windows, especially since I’ll be using cmake, but I’ll just be using Linux for the development environment. Most of this post is reiterating <a href="https://www.youtube.com/watch?v=c9Xt6Me3mJ4">Michael Caisse’s talk</a> at C++Now 2018, and applying it to a NUCLEO-L073RZ development board by STMicro.</p>
 </div>
-<div class="imageblock text-center">
+<div id="img-board" class="imageblock text-center">
 <div class="content">
 <img src="https://media.digikey.com/Photos/STMicro%20Photos/NUCLEO-L073RZ.jpg" alt="NUCLEO L073RZ">
 </div>
+<div class="title">Figure 1. Look at this bucko</div>
 </div>
 <div class="paragraph">
 <p>I mostly picked this MCU because it’s made for low power applications which I want to play around with in the future, it’s got a built-in DAC (nice for signal processing), and the GPIO ports can be toggled faster per instruction than other architectures in the STM32 line. It’s also not so big that it’s too complicated to remember all the peripherals, and it comes in SMD packages that are manageable to solder by hand.</p>
