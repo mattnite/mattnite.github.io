@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<rss version="2.0">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+
 <channel>
+  <atom:link href="https://mattnite.blog/feed.rss" rel="self" type="application/rss+xml" />
   <title>Matt Knight's Blog</title>
   <description>Software Engineering, Embedded Systems, and Zig</description>
   <link>https://mattnite.blog</link>
@@ -8,18 +10,21 @@
   <item>
     <title>@import and Packages</title>
     <link>https://mattnite.blog/posts/import-and-packages.html</link>
+    <guid>https://mattnite.blog/posts/import-and-packages.html</guid>
     <pubDate>Tue, 27 Jul 2021 00:00:00 GMT</pubDate>
   </item>
 
   <item>
     <title>Template Metaprogramming For Register Abstraction</title>
     <link>https://mattnite.blog/posts/register-abstraction.html</link>
+    <guid>https://mattnite.blog/posts/register-abstraction.html</guid>
     <pubDate>Tue, 03 Sep 2019 00:00:00 GMT</pubDate>
   </item>
 
   <item>
     <title>Bare Minimum STM32 Toolchain Setup</title>
     <link>https://mattnite.blog/posts/bare-minimum-stm32-toolchain-setup.html</link>
+    <guid>https://mattnite.blog/posts/bare-minimum-stm32-toolchain-setup.html</guid>
     <pubDate>Fri, 24 May 2019 00:00:00 GMT</pubDate>
   </item>
 
