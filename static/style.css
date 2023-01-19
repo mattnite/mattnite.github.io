@@ -14,6 +14,10 @@ html {
   margin: 0 auto;
 }
 
+body {
+  background-color: #FAF9F6;
+}
+
 code {
   font-family: "BerkeleyMono", monospace;
   border-radius: 0.5em;
@@ -33,6 +37,16 @@ ul li p {
 }
 
 h1, h2, h3, h4, h5, h6 {font-family: "Lora", serif;}
+
+img {
+  max-width: 100%;
+}
+
+.imageblock {
+  display: grid;
+  justify-content: center;
+  text-align: center;
+}
 
 
 #content h1>a.anchor,h2>a.anchor,h3>a.anchor,#toctitle>a.anchor,.sidebarblock>.content>.title>a.anchor,h4>a.anchor,h5>a.anchor,h6>a.anchor {

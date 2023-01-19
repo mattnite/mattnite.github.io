@@ -15,6 +15,13 @@
   </item>
 
   <item>
+    <title>How libbpf Loads Maps</title>
+    <link>https://mattnite.blog/posts/libbpf-maps.html</link>
+    <guid>https://mattnite.blog/posts/libbpf-maps.html</guid>
+    <pubDate>Fri, 16 Oct 2020 00:00:00 GMT</pubDate>
+  </item>
+
+  <item>
     <title>Template Metaprogramming For Register Abstraction</title>
     <link>https://mattnite.blog/posts/register-abstraction.html</link>
     <guid>https://mattnite.blog/posts/register-abstraction.html</guid>
