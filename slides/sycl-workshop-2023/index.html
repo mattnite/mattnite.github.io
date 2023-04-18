@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>reveal.js</title>
+
+    <link rel="stylesheet" href="dist/reset.css">
+    <link rel="stylesheet" href="dist/reveal.css">
+    <link rel="stylesheet" href="dist/theme/zeg.css">
+
+    <!-- Theme used for syntax highlighted code -->
+    <link rel="stylesheet" href="plugin/highlight/srcery.css">
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <section>
+        </section>
+        <section>
+          <h1>EMBEDDED ZIG WORKSHOP</h1>
+          <p>Matt Knight</p>
+        </section>
+        <section>
+          <h2>OVERVIEW</h2>
+          <ul>
+            <li>Introduction</li>
+            <li>Circuit Basics</li>
+            <li>Your Hardware</li>
+            <li>Getting to main()</li>
+            <li>Digital Signal Processing</li>
+            <li>Building Up a Synth</li>
+            <li>Jam</li>
+          </ul>
+        </section>
+        <section>
+          <section>
+            <h2>INTRODUCTION</h2>
+          </section>
+          <section
+            data-background-image="/dist/images/ember.png"
+            data-background-opacity="0.3"
+          >
+            <h3>ZIG EMBEDDED GROUP</h3>
+          </section>
+          <section>
+            <h3>WHAT IS AN EMBEDDED SYSTEM?</h3>
+            <ul>
+              <li>Not a PC</li>
+              <li>Not a server</li>
+              <li>Usually has a real-time component</li>
+              <li>Usually deals with the physical world</li>
+            </ul>
+          </section>
+        </section>
+        <section>
+          <section>
+            <h2>CIRCUIT BASICS</h2>
+          </section>
+          <section>
+            <h3>CURRENT</h3>
+            <ul>
+              <li>Rate of flow of electric charge</li>
+              <br>
+              <li>1 Ampere  = 1 Coulomb/s</li>
+              <li>1 Coulomb = charge of 6.241 * 10^18 electrons</li>
+            </ul>
+          </section>
+          <section>
+            <h3>VOLTAGE</h3>
+            <ul>
+              <li>Electric potential difference</li>
+            </ul>
+          </section>
+          <section>
+            <h3>OHM'S LAW</h3>
+            \[\begin{aligned}
+            V &amp; = IR \\
+            \end{aligned} \]
+            <ul>
+              <li>V: Voltage (Volts)</li>
+              <li>I: Current (Amperes)</li>
+              <li>R: Impedance (Ω)</li>
+            </ul>
+          </section>
+          <section>
+            <h3>KIRCHOFF'S CURRENT LAW</h3>
+            \[\begin{aligned}
+            \sum_{k=1}^{n} i_k = 0 \\
+            \end{aligned} \]
+            <ul>
+              <li>Sum of current entering a node is equal to the current exiting that node</li>
+            </ul>
+
+          </section>
+          <section>
+            <h3>A CIRCUIT IS A GRAPH</h3>
+            <ul>
+              <li>Edges are components</li>
+              <li>Nodes are connections</li>
+            </ul>
+          </section>
+          <section>
+            <h3>COMPLEX COMPONENTS</h3>
+            <ul>
+              <li>Can be modeled with simple components</li>
+            </ul>
+          </section>
+          <section>
+            <h3>CONTINUED READING</h3>
+            <ul>
+              <li>Nodal Analysis</li>
+              <li>Capacitors</li>
+              <li>Inductors (coils)</li>
+              <li>Frequency domain</li>
+              <li>Transistors</li>
+              <li>Laplace transform</li>
+            </ul>
+          </section>
+        </section>
+        <section>
+          <section>
+            <h2>YOUR HARDWARE KIT</h2>
+          </section>
+          <section>
+            <h3>BREADBOARD AND JUMPERS</h3>
+          </section>
+          <section>
+            <h3>RASPBERRY PI PICO</h3>
+          </section>
+          <section>
+            <h3>DEBUGGER</h3>
+          </section>
+          <section>
+            <h3>POTENTIOMETER</h3>
+          </section>
+          <section>
+            <h3>DIGITAL ENCODER</h3>
+          </section>
+          <section>
+            <h3>KEYPAD</h3>
+          </section>
+          <section>
+            <h3>AMPLIFIER AND SPEAKER</h3>
+          </section>
+        </section>
+        <section>
+          <section>
+            <h2>HOW TO BREADBOARD</h2>
+          </section>
+          <section>
+            <h3>BREADBOARD CONNECTIONS</h3>
+          </section>
+          <section>
+            <h3>INNARDS</h3>
+          </section>
+          <section>
+            <h3>RECOMMENDED LAYOUT</h3>
+          </section>
+          <section>
+            <h3>PLAYTIME</h3>
+            Get LED Blinking
+          </section>
+        </section>
+        <section>
+          <section>
+            <h2>RASPBERRY PI PICO</h2>
+          </section>
+          <section>
+            <h3>RASPBERRY PI PICO</h3>
+          </section>
+          <section>
+            <h3>MICROCONTROLLER VS. PROCESSOR</h3>
+          </section>
+          <section>
+            <h3>MEMORY MAPPED INPUT OUTPUT (MMIO)</h3>
+          </section>
+          <section>
+            <h3>PROCESSOR SUBSYSTEM</h3>
+          </section>
+          <section>
+            <h3>CORTEX M0+</h3>
+          </section>
+          <section>
+            <h3>CLOCKS</h3>
+          </section>
+          <section>
+            <h3>PLAYTIME</h3>
+            Print logs over UART and get GDB working
+          </section>
+        </section>
+        <section>
+          <section>
+            <h2>DIGITAL SIGNAL PROCESSING</h2>
+          </section>
+          <section>
+            <h3>GENERATING SOUND</h3>
+          </section>
+          <section>
+            <h3>SAMPLE RATE</h3>
+          </section>
+          <section>
+            <h3>CONVOLUTION</h3>
+            \[\begin{aligned}
+            (f \ast g)(t) = \int_{-\infty}^{\infty} f(\tau)g(t - \tau) \mathrm{d}\tau  \\
+            \end{aligned} \]
+          </section>
+        </section>
+        <section>
+          <section>
+            <h2>BUILD-A-SYNTH</h2>
+          </section>
+          <section>
+            <h3>SINGLE TONE</h3>
+            a single button will play a single sawtooth waveform
+          </section>
+          <section>
+            <h3>CHANGING PITCH</h3>
+            use the potentiometer to change the frequency of the oscillator
+            then: change the octave with the button
+          </section>
+          <section>
+            <h3>MULTIPLE TONES</h3>
+          </section>
+          <section>
+            <h3>WAVETABLE</h3>
+          </section>
+          <section>
+            <h3>ADSR</h3>
+          </section>
+          <section>
+            <h3>KEYPAD</h3>
+            mono something
+          </section>
+          <section>
+            <h3>POLY SOMETHING</h3>
+            mono something
+          </section>
+          <section>
+            <h3>FILTERS</h3>
+          </section>
+        </section>
+        <section>
+          <section>vertical 1</section>
+          <section>vertical 2</section>
+          <section>
+            <pre><code data-trim data-noescape class="zig">
+            const std = @import("std");
+
+            pub fn main() {
+                std.log.info("hello {s}", .{"world"});
+                unreachable;
+            }
+            </code></pre>
+          </section>
+        </section>
+      </div>
+    </div>
+
+    <script src="dist/reveal.js"></script>
+    <script src="plugin/notes/notes.js"></script>
+    <script src="plugin/markdown/markdown.js"></script>
+    <script src="plugin/math/math.js"></script>
+    <script src="plugin/highlight/highlight.js"></script>
+    <script>
+      // More info about initialization & config:
+      // - https://revealjs.com/initialization/
+      // - https://revealjs.com/config/
+      Reveal.initialize({
+        hash: true,
+        highlight: {
+          beforeHighlight: hljs => hljs.registerLanguage("zig", function(hljs) {
+            const QUOTE_STRING = {
+              className: 'string',
+              begin: '"',
+              end: '"',
+              contains: [ hljs.BACKSLASH_ESCAPE ]
+            };
+            const NUMBER_MODE = {
+              className: 'number',
+              begin: '(-?)(\\b0[xX][a-fA-F0-9]+|\\b0[bB][01]+|(\\b\\d+(_\\d+)?(\\.\\d*)?|\\.\\d+)([eE][-+]?\\d+)?)',
+              relevance: 0
+            }
+            return {
+              keywords: {
+                keyword:
+                  'if else switch catch errdefer orelse '
+                  + 'try asm async await break continue return '
+                  + 'comptime defer fn pub resume suspend nosuspend '
+                  + 'test unreachable usingnamespace and or for while '
+                  + 'align allowzero callconv const var volatile export '
+                  + 'extern linksection noalias packed threadlocal enum '
+                  + 'error opaque struct union _',
+                literal: 'true false null undefined',
+                type:
+                  'bool void f32 f64 i32 u8 u32 usize anyerror '
+                  + 'anyframe anyopaque anytype noreturn type',
+                attribute:
+                  '@as @import @cImport @cInclude @floor @intCast @floatCast '
+                  + '@intToFloat @floatToInt @ptrCast @alignCast @alignOf',
+                $pattern: /@?[.a-zA-Z_]+(\d+)?/
+              },
+              contains: [
+                hljs.C_LINE_COMMENT_MODE,
+                QUOTE_STRING,
+                NUMBER_MODE
+              ]
+            };
+          })
+        },
+
+        // Learn about plugins: https://revealjs.com/plugins/
+        plugins: [RevealMarkdown, RevealHighlight, RevealNotes, RevealMath.KaTeX]
+      });
+    </script>
+  </body>
+
+</html>
